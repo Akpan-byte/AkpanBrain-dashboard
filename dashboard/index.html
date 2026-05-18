@@ -1,0 +1,903 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
+<title>AKPANBRAIN — Neural Command</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--c0:#02020e;--c1:#00f5ff;--c2:#00ff9d;--c3:#f59e0b;--c4:#ff2d55;--c5:#8b5cf6;--c6:#ff6b35;--dim:rgba(0,245,255,.15);--bg:rgba(0,20,40,.85);--panel:rgba(2,2,14,.92)}
+body{background:var(--c0);color:#fff;font-family:'Courier New',monospace;overflow:hidden;height:100vh;width:100vw;height:100dvh;cursor:default;touch-action:none}
+/* Scan line */
+#scan{position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,var(--c1),transparent);z-index:9999;animation:scanY 4s linear infinite;opacity:.3;pointer-events:none}
+@keyframes scanY{0%{top:-3px}100%{top:100vh}}
+/* Grid background */
+#grid{position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(0,245,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.03) 1px,transparent 1px);background-size:40px 40px;z-index:0;pointer-events:none}
+/* 3D canvas */
+#three{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;touch-action:none}
+/* ─── RESPONSIVE HUD ─── */
+#hud{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none;display:grid;grid-template-columns:200px 1fr 200px;grid-template-rows:42px 1fr 110px;gap:0}
+/* Top bar */
+#topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-bottom:1px solid var(--dim);pointer-events:auto;background:var(--panel)}
+.logo{font-size:13px;font-weight:900;letter-spacing:4px;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tabs{display:flex;gap:2px}
+.tab{padding:3px 8px;font-size:8px;letter-spacing:1px;background:rgba(0,245,255,.05);border:1px solid var(--dim);border-radius:3px;cursor:pointer;text-decoration:none;color:var(--c1);text-transform:uppercase;transition:all .2s}
+.tab:hover,.tab.act{background:rgba(0,245,255,.15);border-color:var(--c1);color:#fff}
+.clock{font-size:9px;color:var(--c1);letter-spacing:2px}
+/* Panels */
+#lpanel{grid-row:2;padding:5px;overflow-y:auto;pointer-events:auto;background:var(--panel);border-right:1px solid var(--dim);-webkit-overflow-scrolling:touch}
+#rpanel{grid-row:2;padding:5px;overflow-y:auto;pointer-events:auto;background:var(--panel);border-left:1px solid var(--dim);-webkit-overflow-scrolling:touch}
+#center{grid-row:2;pointer-events:none}
+#bottom{grid-column:1/-1;padding:5px 10px;overflow-y:auto;pointer-events:auto;border-top:1px solid var(--dim);background:var(--panel);max-height:110px;-webkit-overflow-scrolling:touch}
+/* ─── MOBILE RESPONSIVE ─── */
+@media(max-width:900px){
+  #hud{grid-template-columns:1fr;grid-template-rows:42px auto 1fr auto 100px}
+  #lpanel{grid-row:2;max-height:180px;border-right:none;border-bottom:1px solid var(--dim);display:flex;flex-wrap:wrap;gap:2px;padding:4px;overflow-x:auto;overflow-y:hidden}
+  #center{grid-row:3}
+  #rpanel{grid-row:4;max-height:160px;border-left:none;border-top:1px solid var(--dim);display:flex;flex-wrap:wrap;gap:3px;padding:4px;overflow-x:auto;overflow-y:hidden;align-content:flex-start}
+  #bottom{grid-row:5;max-height:100px}
+  .agcard{flex:0 0 auto;white-space:nowrap}
+  .sec{flex:0 0 auto;min-width:140px}
+  .logo{font-size:11px;letter-spacing:3px}
+  .tab{padding:2px 5px;font-size:7px}
+  .clock{font-size:8px}
+}
+@media(max-width:480px){
+  #hud{grid-template-rows:38px auto 1fr auto 80px}
+  #lpanel{max-height:140px}
+  #rpanel{max-height:130px}
+  #bottom{max-height:80px}
+  .logo{font-size:10px}
+  .tab{padding:2px 4px;font-size:6px;letter-spacing:.5px}
+  .clock{display:none}
+}
+/* ─── PANEL COMPONENTS ─── */
+.sec{margin-bottom:6px}
+.stitle{font-size:7px;letter-spacing:3px;color:var(--c1);text-transform:uppercase;margin-bottom:3px;font-weight:700;padding-bottom:2px;border-bottom:1px solid var(--dim)}
+.agcard{display:flex;align-items:center;gap:5px;padding:4px 6px;margin-bottom:2px;background:rgba(0,0,0,.3);border-radius:3px;border:1px solid transparent;transition:all .2s;cursor:pointer}
+.agcard:hover,.agcard:focus{border-color:var(--c1);background:rgba(0,245,255,.05)}
+.agdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.agdot.on{box-shadow:0 0 8px currentColor;animation:pulse 1.5s infinite}
+.agdot.off{opacity:.2}
+.agdot.staged{animation:blink 1s infinite}
+.agdot.dormant{opacity:.1;border:1px dashed currentColor;background:transparent}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.agnam{font-size:10px;font-weight:700;flex:1}
+.agreg{font-size:7px;color:var(--c3);opacity:.7}
+.rrow{display:flex;justify-content:space-between;padding:2px 0;font-size:8px}
+.rlbl{color:rgba(255,255,255,.6)}
+.rval{color:var(--c1);font-weight:700}
+.rbar{height:3px;background:rgba(0,245,255,.1);border-radius:1px;margin-top:1px;overflow:hidden}
+.rfill{height:100%;border-radius:1px;transition:width .5s}
+.logline{font-size:8px;padding:1px 0;display:flex;gap:5px;opacity:.8}
+.lt{color:var(--c1);font-size:7px;flex-shrink:0}
+.la{font-size:7px;font-weight:700;flex-shrink:0}
+/* ─── DETAIL PANEL (responsive!) ─── */
+#detail-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:99;pointer-events:auto;display:none}
+#detail-overlay.open{display:block}
+#detail-panel{position:fixed;z-index:100;pointer-events:auto;display:none;overflow-y:auto;box-shadow:0 0 40px rgba(0,245,255,.2),inset 0 0 60px rgba(0,245,255,.03);-webkit-overflow-scrolling:touch}
+#detail-panel.open{display:block;animation:panelIn .2s ease-out}
+@keyframes panelIn{0%{opacity:0;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}
+/* Desktop: centered modal */
+@media(min-width:901px){
+  #detail-panel{top:50%;left:50%;transform:translate(-50%,-50%);width:460px;max-height:75vh;background:rgba(2,2,14,.97);border:1px solid var(--c1);border-radius:10px}
+}
+/* Mobile: bottom sheet */
+@media(max-width:900px){
+  #detail-panel{bottom:0;left:0;width:100%;max-height:70vh;background:rgba(2,2,14,.98);border-top:1px solid var(--c1);border-radius:16px 16px 0 0;animation:slideUp .25s ease-out}
+  @keyframes slideUp{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+}
+#dp-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--dim)}
+#dp-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0}
+#dp-title{font-size:15px;font-weight:900;letter-spacing:2px;flex:1}
+#dp-status{font-size:8px;letter-spacing:2px;padding:3px 10px;border-radius:3px;text-transform:uppercase;font-weight:700}
+#dp-close{font-size:22px;cursor:pointer;color:rgba(255,255,255,.4);transition:color .2s;padding:6px;line-height:1}
+#dp-close:hover{color:#fff}
+#dp-body{padding:14px 16px}
+.dp-section{margin-bottom:14px}
+.dp-label{font-size:7px;letter-spacing:3px;color:var(--c1);text-transform:uppercase;margin-bottom:5px;font-weight:700}
+.dp-text{font-size:11px;line-height:1.6;color:rgba(255,255,255,.8)}
+.dp-list{list-style:none;padding:0}
+.dp-list li{font-size:10px;padding:4px 0 4px 14px;position:relative;color:rgba(255,255,255,.7)}
+.dp-list li::before{content:'▸';position:absolute;left:0;color:var(--c1)}
+.dp-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dp-stat{background:rgba(0,0,0,.3);padding:8px 10px;border-radius:6px;border:1px solid rgba(0,245,255,.1)}
+.dp-stat-label{font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase}
+.dp-stat-val{font-size:14px;font-weight:900;color:var(--c1);margin-top:2px}
+/* File list for neuron detail */
+.dp-files{list-style:none;padding:0}
+.dp-files li{font-size:10px;padding:4px 8px;margin:2px 0;background:rgba(0,0,0,.2);border-radius:4px;border:1px solid rgba(0,245,255,.08);color:rgba(255,255,255,.6);word-break:break-all}
+.dp-files li .fname{color:var(--c1);font-weight:700}
+.dp-files li .fsize{color:rgba(255,255,255,.3);font-size:8px;margin-left:6px}
+.dp-groups{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.dp-group{font-size:8px;padding:2px 8px;background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.15);border-radius:10px;color:var(--c1)}
+/* Subagent list */
+.sub-card{display:flex;align-items:center;gap:6px;padding:5px 8px;margin:3px 0;background:rgba(0,0,0,.25);border-radius:4px;border:1px solid rgba(0,245,255,.08)}
+.sub-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sub-id{font-size:9px;font-weight:700;color:var(--c1)}
+.sub-task{font-size:8px;color:rgba(255,255,255,.5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub-status{font-size:7px;letter-spacing:1px;font-weight:700}
+/* Live indicator */
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:4px;animation:pulse 1.5s infinite}
+/* Loading screen */
+#loading{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--c0);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .5s}
+#loading.hide{opacity:0;pointer-events:none;display:none}
+.ltxt{font-size:11px;letter-spacing:4px;color:var(--c1);animation:pulse 1s infinite}
+.lbar{width:180px;height:2px;background:rgba(0,245,255,.2);margin-top:10px;border-radius:1px;overflow:hidden}
+.lprog{width:0%;height:100%;background:var(--c1);transition:width .3s}
+/* Scrollbar */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,245,255,.2);border-radius:2px}
+/* Pinch-zoom hint on mobile */
+.zoom-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;z-index:10;pointer-events:none;animation:fadeOut 5s forwards 3s}
+@keyframes fadeOut{to{opacity:0}}
+</style></head><body>
+<div id="scan"></div><div id="grid"></div>
+<div id="loading"><div class="ltxt">INITIALIZING NEURAL CORE</div><div class="lbar"><div class="lprog" id="lprog"></div></div></div>
+<canvas id="three"></canvas>
+<div id="hud">
+<div id="topbar">
+<div class="logo">AKPANBRAIN</div>
+<div class="tabs">
+<a class="tab act" href="#">NEURAL CMD</a>
+<a class="tab" id="link-9router" href="/9router/dashboard" target="_blank">9ROUTER</a>
+<a class="tab" id="link-nullclaw" href="/nullclaw">NULLCLAW</a>
+<a class="tab" id="link-gdrive" href="https://drive.google.com/drive/folders/AkpanBrain" target="_blank">GDRIVE</a>
+</div>
+<div class="clock" id="clock"></div>
+</div>
+<div id="lpanel"><div class="sec"><div class="stitle"><span class="live-dot"></span>NEURAL AGENTS</div><div id="agent-list"></div></div></div>
+<div id="center"></div>
+<div id="rpanel">
+<div class="sec"><div class="stitle">BRAIN REGIONS</div><div id="region-list"></div></div>
+<div class="sec" style="margin-top:6px"><div class="stitle">SYNC STATUS</div><div id="sync-info"></div></div>
+</div>
+<div id="bottom"><div class="stitle">NEURAL ACTIVITY FEED</div><div id="activity-feed"></div></div>
+</div>
+<!-- Detail Panel (responsive: modal desktop, bottom-sheet mobile) -->
+<div id="detail-overlay" onclick="closeDetail()"></div>
+<div id="detail-panel">
+<div id="dp-header">
+<div id="dp-icon"></div>
+<div id="dp-title"></div>
+<div id="dp-status"></div>
+<div id="dp-close" onclick="closeDetail()">&#x2715;</div>
+</div>
+<div id="dp-body"></div>
+</div>
+<!-- Mobile pinch-zoom hint -->
+<div class="zoom-hint" id="zoom-hint">PINCH TO ZOOM · DRAG TO ORBIT</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+window.THREE = THREE;
+window.OrbitControls = OrbitControls;
+/* ─── API CONFIG ─── */
+const LOCAL_API='http://localhost:8199';
+const TUNNELS=['https://icons-lambda-distances-emotions.trycloudflare.com'];
+let API='';
+async function findAPI(){
+  if(API)return API;
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){API=LOCAL_API;fixNavLinks();return API}
+  // On Vercel/static: try tunnel first, then local
+  for(const t of TUNNELS){
+    try{const r=await fetch(t+'/api/agents',{signal:AbortSignal.timeout(3000)});if(r.ok){API=t;fixNavLinks();return t}}catch{}
+  }
+  API=LOCAL_API;fixNavLinks();return API;
+}
+function fixNavLinks(){
+  const n=document.getElementById('link-nullclaw');
+  if(API&&API!==LOCAL_API&&n)n.href=API+'/nullclaw';
+}
+findAPI();
+
+/* ─── COLORS & CONFIG ─── */
+const ACOL={hermes:'#3B82F6','gemini-cli':'#4285F4','kilo-code':'#F59E0B','kimi-code':'#EF4444',nullclaw:'#8B5CF6','claude-code':'#D97706',opencode:'#10B981','qwen-code':'#6366F1',codebuff:'#EC4899',jcode:'#64748B','claw-code':'#F97316',cline:'#06B6D4',ironclaw:'#A855F7',openfang:'#EF4444',codex:'#22D3EE'};
+const RCOL={semantic:'#00f5ff',graph:'#00ff9d',episodic:'#f59e0b',working:'#ff2d55',procedural:'#8b5cf6',sensory:'#ff6b35'};
+const RNAME={semantic:'Semantic Cortex',graph:'Knowledge Graph',episodic:'Episodic Memory',working:'Working Memory',procedural:'Procedural Cortex',sensory:'Sensory Buffer'};
+const RLOC={semantic:'Parietal Lobe',graph:'Hippocampus',episodic:'Temporal Lobe',working:'Prefrontal Cortex',procedural:'Motor Cortex',sensory:'Sensory Strip'};
+
+/* ─── STATE ─── */
+let knownAgents=new Set(),logs=[],scene,camera,renderer,controls,brainGroup,neurons=[],neuronsByRegion={},dendrites=[],impulses=[],agentAvatars={},clickables=[],raycaster,mouse,clock=new THREE.Clock();
+let activityHeat={semantic:0,graph:0,episodic:0,working:0,procedural:0,sensory:0};
+let agentData={},regionData={},hoveredObj=null,ws=null;
+
+/* ─── BRAIN REGION 3D POSITIONS ─── */
+const RPOS={
+  semantic:{x:0,y:.3,z:-.6,radius:.32},
+  graph:{x:0,y:-.12,z:-.05,radius:.22},
+  episodic:{x:.5,y:0,z:.1,radius:.26},
+  working:{x:0,y:.5,z:.32,radius:.28},
+  procedural:{x:0,y:.62,z:-.08,radius:.2},
+  sensory:{x:0,y:.57,z:.42,radius:.2}
+};
+
+/* ─── THREE.JS SETUP WITH ORBIT CONTROLS ─── */
+function init3D(){
+  scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x02020e,.08);
+
+  camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,100);
+  camera.position.set(0,1,4.5);
+
+  renderer=new THREE.WebGLRenderer({canvas:document.getElementById('three'),antialias:true,alpha:true,preserveDrawingBuffer:true});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.3;
+
+  /* ─── ORBIT CONTROLS: interactive drag/zoom/pan ─── */
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;
+  controls.dampingFactor=.08;
+  controls.rotateSpeed=.6;
+  controls.zoomSpeed=1.2;
+  controls.panSpeed=.8;
+  controls.minDistance=1.5;
+  controls.maxDistance=12;
+  controls.enablePan=true;
+  controls.autoRotate=true;
+  controls.autoRotateSpeed=.3;
+  controls.target.set(0,0,0);
+  // Touch: one finger rotate, two finger zoom/pan
+  controls.touches={ONE:0,TWO:2}; // ROTATE=0, DOLLY_PAN=2
+
+  raycaster=new THREE.Raycaster();
+  // Larger pick threshold for tiny objects on mobile
+  raycaster.params.Points={threshold:.05};
+  mouse=new THREE.Vector2();
+
+  // Lights
+  const amb=new THREE.AmbientLight(0x112244,.5);scene.add(amb);
+  const p1=new THREE.PointLight(0x00f5ff,.8,12);p1.position.set(3,3,3);scene.add(p1);
+  const p2=new THREE.PointLight(0x8b5cf6,.5,12);p2.position.set(-3,2,-3);scene.add(p2);
+  const p3=new THREE.PointLight(0xff2d55,.3,12);p3.position.set(0,-2,4);scene.add(p3);
+
+  buildBrain();
+  buildNeurons();
+  buildDendrites();
+  buildAgentAvatars();
+  setupInteraction();
+
+  window.addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+
+  function animate(){
+    requestAnimationFrame(animate);
+    const t=clock.getElapsedTime();
+    controls.update(); // Required for damping + autoRotate
+
+    // Neuron pulse animation
+    neurons.forEach((n,i)=>{
+      if(!n.userData.isHalo){
+        const s=1+Math.sin(t*2+i*.4)*.15;
+        n.scale.setScalar(s);
+        n.material.opacity=.4+Math.sin(t*3+i*.6)*.25;
+      }
+    });
+    animateImpulses(t);
+    animateAgents(t);
+
+    // Activity heat decay
+    Object.keys(activityHeat).forEach(k=>{activityHeat[k]=Math.max(activityHeat[k]*.97-.005,0)});
+
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  // Hide loading
+  setTimeout(()=>{document.getElementById('loading').classList.add('hide')},1200);
+  // Hide zoom hint after a few seconds
+  setTimeout(()=>{const h=document.getElementById('zoom-hint');if(h)h.style.display='none'},8000);
+}
+
+/* ─── BUILD ANATOMICAL BRAIN ─── */
+function buildBrain(){
+  brainGroup=new THREE.Group();
+  function makeHemi(flipX){
+    const geo=new THREE.SphereGeometry(.88,64,64);
+    const pos=geo.attributes.position;
+    for(let i=0;i<pos.count;i++){
+      let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+      if(flipX?x<0:x>0)x*=.08;
+      const f1=6,f2=9,a1=.05,a2=.03;
+      const n=Math.sin(x*f1)*Math.cos(y*f1*.7)*Math.sin(z*f1*1.1)*a1+Math.sin(x*f2*1.3)*Math.cos(y*f2)*a2;
+      const r=Math.sqrt(x*x+y*y+z*z);
+      if(r>.15){const s=1+n;pos.setXYZ(i,x*s,y*s,z*s)}
+    }
+    geo.computeVertexNormals();
+    const cols=new Float32Array(pos.count*3);
+    for(let i=0;i<pos.count;i++){
+      let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+      const c=regionColor(x,y,z);
+      cols[i*3]=c.r;cols[i*3+1]=c.g;cols[i*3+2]=c.b;
+    }
+    geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+    const mat=new THREE.MeshPhongMaterial({vertexColors:true,transparent:true,opacity:.25,shininess:90,specular:0x00f5ff,side:THREE.DoubleSide});
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.x=flipX?.05:-.05;
+    mesh.userData={type:'brain-region',clickable:true};
+    clickables.push(mesh);
+    return mesh;
+  }
+  brainGroup.add(makeHemi(false));brainGroup.add(makeHemi(true));
+
+  // Brain stem
+  const stemGeo=new THREE.CylinderGeometry(.11,.07,.55,16);
+  const stemMat=new THREE.MeshPhongMaterial({color:0x1a1a3e,transparent:true,opacity:.35});
+  const stem=new THREE.Mesh(stemGeo,stemMat);
+  stem.position.set(0,-.82,-.2);stem.rotation.x=.3;
+  brainGroup.add(stem);
+
+  // Cerebellum
+  const cbGeo=new THREE.SphereGeometry(.28,32,32);
+  const cbPos=cbGeo.attributes.position;
+  for(let i=0;i<cbPos.count;i++){
+    let x=cbPos.getX(i),y=cbPos.getY(i),z=cbPos.getZ(i);
+    const n=Math.sin(x*14)*Math.cos(y*11)*.018;
+    cbPos.setXYZ(i,x*(1+n),y*.65*(1+n),z*(1+n));
+  }
+  cbGeo.computeVertexNormals();
+  const cbMat=new THREE.MeshPhongMaterial({color:0x1a2a4e,transparent:true,opacity:.3,shininess:50});
+  const cb=new THREE.Mesh(cbGeo,cbMat);cb.position.set(0,-.55,-.5);
+  brainGroup.add(cb);
+  scene.add(brainGroup);
+}
+
+function regionColor(x,y,z){
+  const c=new THREE.Color(0x080820);
+  if(y>.35&&z>.15)c.lerp(new THREE.Color(0xff2d55),.25);
+  else if(y>.45)c.lerp(new THREE.Color(0x8b5cf6),.25);
+  else if(y>.2&&z<-.3)c.lerp(new THREE.Color(0x00f5ff),.25);
+  else if(Math.abs(x)>.3&&y>-.2&&y<.3)c.lerp(new THREE.Color(0xf59e0b),.25);
+  else if(y<0&&Math.abs(x)<.15)c.lerp(new THREE.Color(0x00ff9d),.25);
+  else if(y>.3&&z>.3)c.lerp(new THREE.Color(0xff6b35),.2);
+  return c;
+}
+
+/* ─── BUILD NEURONS — 3x LARGER for visibility ─── */
+function buildNeurons(){
+  // Core neuron: .04 radius (was .016 — 2.5x bigger)
+  const nGeo=new THREE.SphereGeometry(.04,10,10);
+  // Halo: .08 radius (was .035)
+  const hGeo=new THREE.SphereGeometry(.08,8,8);
+
+  Object.keys(RPOS).forEach(region=>{
+    neuronsByRegion[region]=[];
+    const rp=RPOS[region];
+    const col=new THREE.Color(RCOL[region]);
+    const count=28+Math.floor(Math.random()*8);
+    for(let i=0;i<count;i++){
+      const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.6});
+      const n=new THREE.Mesh(nGeo,mat);
+      const theta=Math.random()*Math.PI*2;
+      const phi=Math.acos(Math.random()*2-1);
+      const r=rp.radius*(.25+Math.random()*.75);
+      n.position.set(rp.x+r*Math.sin(phi)*Math.cos(theta),rp.y+r*Math.sin(phi)*Math.sin(theta),rp.z+r*Math.cos(phi));
+      n.userData={type:'neuron',region,neuronIndex:i,clickable:true,id:`${region}-${i}`};
+      clickables.push(n);
+      scene.add(n);
+      neurons.push(n);
+      neuronsByRegion[region].push(n);
+      // Halo on every 3rd neuron for visibility
+      if(i%3===0){
+        const hm=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.08,side:THREE.BackSide});
+        const h=new THREE.Mesh(hGeo,hm);
+        h.position.copy(n.position);
+        h.userData={type:'neuron-halo',region,isHalo:true};
+        scene.add(h);neurons.push(h);
+      }
+    }
+  });
+}
+
+/* ─── BUILD DENDRITES (synapses) — thicker for visibility ─── */
+function buildDendrites(){
+  Object.keys(RPOS).forEach(region=>{
+    const ns=neuronsByRegion[region]||[];
+    for(let i=0;i<ns.length;i++){
+      const conns=2+Math.floor(Math.random()*2);
+      for(let c=0;c<conns;c++){
+        const j=(i+c+1)%ns.length;
+        addDendrite(ns[i].position,ns[j].position,region);
+      }
+    }
+  });
+  // Inter-region connections
+  [['semantic','graph'],['graph','episodic'],['working','procedural'],['working','sensory'],['episodic','graph'],['procedural','semantic'],['sensory','working'],['episodic','semantic'],['working','graph'],['graph','procedural']].forEach(([a,b])=>{
+    const nA=neuronsByRegion[a]||[],nB=neuronsByRegion[b]||[];
+    if(nA.length&&nB.length){for(let i=0;i<2;i++){addDendrite(nA[Math.floor(Math.random()*nA.length)].position,nB[Math.floor(Math.random()*nB.length)].position,a+'-'+b,true)}}
+  });
+}
+function addDendrite(from,to,region,isInter=false){
+  const mid=from.clone().add(to).multiplyScalar(.5);
+  mid.x+=(Math.random()-.5)*.12;mid.y+=(Math.random()-.5)*.12;mid.z+=(Math.random()-.5)*.12;
+  const curve=new THREE.CatmullRomCurve3([from.clone(),mid,to.clone()]);
+  const geo=new THREE.TubeGeometry(curve,6,.004,4,false); // .004 was .002 — 2x thicker
+  const col=new THREE.Color(RCOL[region.split('-')[0]]||'#00f5ff');
+  const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:isInter?.15:.25});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.userData={type:'synapse',region,from:from.clone(),to:to.clone(),clickable:true};
+  clickables.push(mesh);
+  scene.add(mesh);dendrites.push(mesh);
+}
+
+/* ─── ELECTRICAL IMPULSES ─── */
+function spawnImpulse(region,from,to){
+  const col=new THREE.Color(RCOL[region]||'#00f5ff');
+  const geo=new THREE.SphereGeometry(.015,6,6); // Bigger impulse particles
+  const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.9});
+  const p=new THREE.Mesh(geo,mat);
+  p.userData={region,from:from.clone(),to:to.clone(),t:0,speed:.4+Math.random()*.6};
+  scene.add(p);impulses.push(p);
+}
+function animateImpulses(t){
+  Object.keys(activityHeat).forEach(region=>{
+    const heat=activityHeat[region];
+    if(Math.random()<heat*.04){
+      const rd=dendrites.filter(d=>d.userData.region===region||d.userData.region.startsWith(region+'-'));
+      if(rd.length){const d=rd[Math.floor(Math.random()*rd.length)];spawnImpulse(region,d.userData.from,d.userData.to)}
+    }
+  });
+  if(Math.random()<.015&&dendrites.length){const d=dendrites[Math.floor(Math.random()*dendrites.length)];spawnImpulse(d.userData.region.split('-')[0],d.userData.from,d.userData.to)}
+  for(let i=impulses.length-1;i>=0;i--){
+    const p=impulses[i];p.userData.t+=.016*p.userData.speed;
+    if(p.userData.t>=1){scene.remove(p);p.geometry.dispose();p.material.dispose();impulses.splice(i,1);continue}
+    const tt=p.userData.t;p.position.lerpVectors(p.userData.from,p.userData.to,tt);
+    p.material.opacity=tt<.15?tt*6:tt>.85?(1-tt)*6:.75;
+    p.scale.setScalar(.8+Math.sin(t*12+i)*.3);
+  }
+  while(impulses.length>120){const p=impulses.shift();scene.remove(p);p.geometry.dispose();p.material.dispose()}
+}
+
+/* ─── AGENT AVATARS — LARGER for visibility ─── */
+function buildAgentAvatars(){
+  Object.entries(ACOL).forEach(([name,col])=>{
+    const c=new THREE.Color(col);
+    const geo=new THREE.SphereGeometry(.06,14,14); // Was .035 — nearly 2x bigger
+    const mat=new THREE.MeshPhongMaterial({color:c,emissive:c,emissiveIntensity:.6,transparent:true,opacity:.85});
+    const av=new THREE.Mesh(geo,mat);
+    av.visible=false;
+    // Glow ring — bigger
+    const ringGeo=new THREE.RingGeometry(.08,.11,24);
+    const ringMat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.3,side:THREE.DoubleSide});
+    const ring=new THREE.Mesh(ringGeo,ringMat);ring.rotation.x=Math.PI/2;av.add(ring);
+    // Label — bigger text
+    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
+    const ctx=canvas.getContext('2d');ctx.fillStyle=col;ctx.font='bold 28px monospace';ctx.textAlign='center';ctx.fillText(name,128,44);
+    const tex=new THREE.CanvasTexture(canvas);
+    const sm=new THREE.SpriteMaterial({map:tex,transparent:true,opacity:.9});
+    const sprite=new THREE.Sprite(sm);sprite.scale.set(.42,.1,1);sprite.position.y=-.1;av.add(sprite);
+    av.userData={type:'agent',name,clickable:true};
+    clickables.push(av);
+    scene.add(av);
+    agentAvatars[name]=av;
+  });
+}
+
+function animateAgents(t){
+  Object.entries(agentAvatars).forEach(([name,av])=>{
+    if(!av.visible)return;
+    av.position.lerp(av.userData.targetPos||new THREE.Vector3(),.025);
+    av.position.y+=Math.sin(t*1.8+name.length)*.003;
+    if(av.children[0])av.children[0].rotation.z=t*1.5;
+  });
+}
+
+function positionAgent(name,region,status){
+  const av=agentAvatars[name];if(!av)return;
+  av.visible=true;
+  if(status==='inactive'||status==='dormant'){
+    const idx=Object.keys(ACOL).indexOf(name);
+    av.userData.targetPos=new THREE.Vector3(-1.4+idx*.22,-1.4,0);
+    av.material.opacity=status==='dormant'?.08:.2;
+    if(av.children[0])av.children[0].material.opacity=status==='dormant'?.03:.1;
+    return;
+  }
+  av.material.opacity=.9;if(av.children[0])av.children[0].material.opacity=.4;
+  const rp=RPOS[region]||RPOS.semantic;
+  av.userData.targetPos=new THREE.Vector3(rp.x+(Math.random()-.5)*rp.radius*.6,rp.y+rp.radius+.15+Math.random()*.1,rp.z+(Math.random()-.5)*rp.radius*.6);
+  av.userData.region=region;
+  activityHeat[region]=Math.min(activityHeat[region]+.25,3);
+}
+
+/* ─── INTERACTION: Raycasting + Click/Tap ─── */
+function setupInteraction(){
+  function onPointerMove(e){
+    const rect=renderer.domElement.getBoundingClientRect();
+    const cx=e.clientX||0;
+    const cy=e.clientY||0;
+    mouse.x=((cx-rect.left)/rect.width)*2-1;
+    mouse.y=-((cy-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObjects(clickables,true);
+    if(hoveredObj&&hoveredObj.material){
+      if(hoveredObj.userData._origEmissive!==undefined)hoveredObj.material.emissiveIntensity=hoveredObj.userData._origEmissive;
+      hoveredObj=null;
+    }
+    if(hits.length){
+      let obj=hits[0].object;
+      while(obj&&!obj.userData.clickable&&obj.parent)obj=obj.parent;
+      if(obj&&obj.userData.clickable){
+        hoveredObj=obj;
+        if(obj.material&&obj.material.emissiveIntensity!==undefined){
+          obj.userData._origEmissive=obj.material.emissiveIntensity;
+          obj.material.emissiveIntensity=2;
+        }
+        renderer.domElement.style.cursor='pointer';
+      }else{renderer.domElement.style.cursor='grab'}
+    }else{renderer.domElement.style.cursor='grab'}
+  }
+  function onClick(e){
+    // Don't process if we're orbiting (dragged)
+    if(e.type==='click'&&e.detail===0)return; // Chrome touch fix
+    const rect=renderer.domElement.getBoundingClientRect();
+    const cx=e.clientX||(e.changedTouches&&e.changedTouches[0]&&e.changedTouches[0].clientX)||0;
+    const cy=e.clientY||(e.changedTouches&&e.changedTouches[0]&&e.changedTouches[0].clientY)||0;
+    mouse.x=((cx-rect.left)/rect.width)*2-1;
+    mouse.y=-((cy-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObjects(clickables,true);
+    if(hits.length){
+      let obj=hits[0].object;
+      while(obj&&!obj.userData.clickable&&obj.parent)obj=obj.parent;
+      if(obj&&obj.userData.clickable){
+        if(obj.userData.type==='agent')showAgentDetail(obj.userData.name);
+        else if(obj.userData.type==='neuron')showNeuronDetail(obj.userData);
+        else if(obj.userData.type==='synapse')showSynapseDetail(obj.userData);
+        else if(obj.userData.type==='brain-region')showRegionDetail(guessRegion(obj.point||new THREE.Vector3()));
+        e.preventDefault();
+      }
+    }
+  }
+  // Use pointerdown/pointerup to detect taps vs drags
+  let pointerDown=null;
+  renderer.domElement.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY,time:Date.now()}});
+  renderer.domElement.addEventListener('pointerup',e=>{
+    if(!pointerDown)return;
+    const dx=e.clientX-pointerDown.x,dy=e.clientY-pointerDown.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const elapsed=Date.now()-pointerDown.time;
+    // Only count as tap if minimal movement and short time
+    if(dist<10&&elapsed<300)onClick(e);
+    pointerDown=null;
+  });
+  renderer.domElement.addEventListener('pointermove',onPointerMove);
+}
+
+function guessRegion(point){
+  let best='semantic',bestDist=Infinity;
+  Object.entries(RPOS).forEach(([k,rp])=>{
+    const d=Math.sqrt((point.x-rp.x)**2+(point.y-rp.y)**2+(point.z-rp.z)**2);
+    if(d<bestDist){bestDist=d;best=k}
+  });
+  return best;
+}
+
+/* ─── DETAIL PANELS ─── */
+function openDetail(html,icon,iconColor,title,statusColor,statusText){
+  const dp=document.getElementById('detail-panel');
+  const ov=document.getElementById('detail-overlay');
+  document.getElementById('dp-icon').style.background=iconColor;
+  document.getElementById('dp-icon').style.boxShadow=`0 0 20px ${iconColor}`;
+  document.getElementById('dp-icon').textContent=icon;
+  document.getElementById('dp-title').textContent=title;
+  document.getElementById('dp-title').style.color=iconColor;
+  const st=document.getElementById('dp-status');
+  st.textContent=statusText;st.style.background=statusColor;st.style.color='#fff';
+  document.getElementById('dp-body').innerHTML=html;
+  dp.classList.add('open');ov.classList.add('open');
+}
+function closeDetail(){
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('detail-overlay').classList.remove('open');
+}
+window.closeDetail=closeDetail;
+
+function showAgentDetail(name){
+  const a=agentData[name];
+  const col=ACOL[name]||'#888';
+  const status=a?.status||'dormant';
+  const statusCol={active:'#00ff9d',staged:'#f59e0b',inactive:'#64748B',dormant:'#333'}[status]||'#333';
+  let h='';
+  h+=`<div class="dp-section"><div class="dp-label">Description</div><div class="dp-text">${a?.desc||'AI coding/reasoning agent'}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Current Objective</div><div class="dp-text" style="color:${col}">${a?.objective||'Idle — not running'}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Next Steps & Plans</div><ul class="dp-list">${(a?.plans||['Not available']).map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Interacting With</div><ul class="dp-list">${(a?.interactions||['None']).map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Brain Region</div><div class="dp-text" style="color:${RCOL[a?.region||'semantic']||'#fff'}">${RNAME[a?.region||'semantic']||'Semantic Cortex'} — ${RLOC[a?.region||'semantic']||'Parietal Lobe'}</div></div>`;
+
+  // Subagents section
+  const subs=a?.subagents||[];
+  h+=`<div class="dp-section"><div class="dp-label">Active Subagents (${subs.length})</div>`;
+  if(subs.length){
+    subs.forEach(s=>{
+      const sCol=s.status==='active'?'#22c55e':s.status==='running'?'#f59e0b':'#64748B';
+      h+=`<div class="sub-card"><div class="sub-dot" style="background:${sCol}"></div><div class="sub-id">${s.id||'?'}</div><div class="sub-task">${s.task||'unknown'}</div><div class="sub-status" style="color:${sCol}">${(s.status||'unknown').toUpperCase()}</div></div>`;
+    });
+  }else{
+    h+=`<div class="dp-text" style="opacity:.4">No active subagents</div>`;
+  }
+  h+=`</div>`;
+
+  // Stats
+  h+=`<div class="dp-section"><div class="dp-stats">`;
+  h+=`<div class="dp-stat"><div class="dp-stat-label">PID</div><div class="dp-stat-val">${a?.pid||'N/A'}</div></div>`;
+  h+=`<div class="dp-stat"><div class="dp-stat-label">CPU</div><div class="dp-stat-val">${a?.cpu||'N/A'}%</div></div>`;
+  h+=`<div class="dp-stat"><div class="dp-stat-label">MEM</div><div class="dp-stat-val">${a?.mem||'N/A'}%</div></div>`;
+  h+=`<div class="dp-stat"><div class="dp-stat-label">Detected</div><div class="dp-stat-val" style="font-size:9px">${a?.detected_by||'none'}</div></div>`;
+  h+=`</div></div>`;
+
+  // Enrich from API
+  fetchAPI('/api/agent/'+name).then(d=>{
+    if(d&&!d.error){
+      const body=document.getElementById('dp-body');
+      // Add subagents from API if available
+      if(d.subagents&&d.subagents.length){
+        // Already shown above, but update if API has more
+      }
+      if(d.brain_region){
+        let extra=`<div class="dp-section"><div class="dp-label">Region Details</div><div class="dp-text">${d.brain_region.description||''}</div></div>`;
+        body.innerHTML+=extra;
+      }
+    }
+  });
+
+  openDetail(h,name[0].toUpperCase(),col,name.toUpperCase(),statusCol,status);
+}
+
+function showNeuronDetail(userData){
+  const region=userData.region;
+  const col=RCOL[region];
+  let h='';
+  h+=`<div class="dp-section"><div class="dp-label">Neuron ID</div><div class="dp-text">${userData.id}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Brain Region</div><div class="dp-text" style="color:${col}">${RNAME[region]} — ${RLOC[region]}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Activity Level</div><div class="dp-text">${'█'.repeat(Math.min(Math.ceil(activityHeat[region]*3),10))}${'░'.repeat(Math.max(10-Math.ceil(activityHeat[region]*3),0))} ${Math.round(activityHeat[region]*100/3)}%</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Connections</div><div class="dp-text">${dendrites.filter(d=>d.userData.region===region||d.userData.region.startsWith(region+'-')).length} synapses</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Active Impulses</div><div class="dp-text">${impulses.filter(p=>p.userData.region===region).length} signals</div></div>`;
+
+  // Fetch region files and groups from API
+  fetchAPI('/api/region/'+region).then(d=>{
+    if(d&&!d.error){
+      const body=document.getElementById('dp-body');
+      let extra='';
+      // Description
+      if(d.description)extra+=`<div class="dp-section"><div class="dp-label">Region Description</div><div class="dp-text">${d.description}</div></div>`;
+      // Functions
+      if(d.functions&&d.functions.length)extra+=`<div class="dp-section"><div class="dp-label">Functions</div><ul class="dp-list">${d.functions.map(f=>`<li>${f}</li>`).join('')}</ul></div>`;
+      // FILES associated with this region
+      const files=d.live_stats?.files||[];
+      if(files.length){
+        extra+=`<div class="dp-section"><div class="dp-label">Associated Files (${files.length})</div><ul class="dp-files">`;
+        files.forEach(f=>{
+          extra+=`<li><span class="fname">${f.name||f.path}</span><span class="fsize">${formatSize(f.size)}</span></li>`;
+        });
+        extra+=`</ul></div>`;
+      }
+      // GROUPS
+      const groups=d.groups||d.live_stats?.groups||[];
+      if(groups.length){
+        extra+=`<div class="dp-section"><div class="dp-label">Groups</div><div class="dp-groups">${groups.map(g=>`<span class="dp-group">${g}</span>`).join('')}</div></div>`;
+      }
+      // Live stats
+      if(d.live_stats){
+        const stats=Object.entries(d.live_stats).filter(([k,v])=>typeof v!=='object'&&k!=='files'&&k!=='skills');
+        if(stats.length){
+          extra+=`<div class="dp-section"><div class="dp-stats">`;
+          stats.forEach(([k,v])=>{extra+=`<div class="dp-stat"><div class="dp-stat-label">${k}</div><div class="dp-stat-val">${v}</div></div>`});
+          extra+=`</div></div>`;
+        }
+      }
+      if(extra)body.innerHTML+=extra;
+    }
+  });
+
+  openDetail(h,'⚡',col,`${RNAME[region]} NEURON ${userData.neuronIndex}`,col,'NEURON');
+}
+
+function showSynapseDetail(userData){
+  const region=userData.region.split('-')[0];
+  const col=RCOL[region]||'#00f5ff';
+  const isInter=userData.region.includes('-');
+  let h='';
+  h+=`<div class="dp-section"><div class="dp-label">Synapse ID</div><div class="dp-text">${userData.region}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Type</div><div class="dp-text">${isInter?'Inter-region (long-range)':'Intra-region (local)'}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Brain Region</div><div class="dp-text" style="color:${col}">${RNAME[region]||region} — ${RLOC[region]||''}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Activity</div><div class="dp-text">${'█'.repeat(Math.min(Math.ceil(activityHeat[region]*3),10))}${'░'.repeat(Math.max(10-Math.ceil(activityHeat[region]*3),0))} ${Math.round(activityHeat[region]*100/3)}%</div></div>`;
+
+  // Fetch files for the synapse's region
+  fetchAPI('/api/region/'+region).then(d=>{
+    if(d&&!d.error){
+      const body=document.getElementById('dp-body');
+      let extra='';
+      const files=d.live_stats?.files||[];
+      if(files.length){
+        extra+=`<div class="dp-section"><div class="dp-label">Associated Files (${files.length})</div><ul class="dp-files">`;
+        files.forEach(f=>{extra+=`<li><span class="fname">${f.name||f.path}</span><span class="fsize">${formatSize(f.size)}</span></li>`});
+        extra+=`</ul></div>`;
+      }
+      const groups=d.groups||[];
+      if(groups.length)extra+=`<div class="dp-section"><div class="dp-label">Groups</div><div class="dp-groups">${groups.map(g=>`<span class="dp-group">${g}</span>`).join('')}</div></div>`;
+      if(extra)body.innerHTML+=extra;
+    }
+  });
+
+  openDetail(h,'🔗',col,`SYNAPSE ${userData.region.toUpperCase()}`,col,'SYNAPSE');
+}
+
+function showRegionDetail(region){
+  const col=RCOL[region]||'#00f5ff';
+  let h='';
+  h+=`<div class="dp-section"><div class="dp-label">Location</div><div class="dp-text">${RLOC[region]||'Unknown'}</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Neurons</div><div class="dp-text">${(neuronsByRegion[region]||[]).length} neurons active</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Activity</div><div class="dp-text">${'█'.repeat(Math.min(Math.ceil(activityHeat[region]*3),10))}${'░'.repeat(Math.max(10-Math.ceil(activityHeat[region]*3),0))} ${Math.round(activityHeat[region]*100/3)}%</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Impulses</div><div class="dp-text">${impulses.filter(p=>p.userData.region===region).length} active signals</div></div>`;
+  h+=`<div class="dp-section"><div class="dp-label">Connected Agents</div><ul class="dp-list">${Object.entries(agentAvatars).filter(([n,a])=>a.userData.region===region&&a.visible).map(([n])=>`<li style="color:${ACOL[n]||'#fff'};cursor:pointer" onclick="showAgentDetail('${n}')">${n}</li>`).join('')||'<li>No agents in this region</li>'}</ul></div>`;
+
+  fetchAPI('/api/region/'+region).then(d=>{
+    if(d&&!d.error){
+      const body=document.getElementById('dp-body');
+      let extra=`<div class="dp-section"><div class="dp-label">Description</div><div class="dp-text">${d.description||''}</div></div>`;
+      if(d.functions&&d.functions.length)extra+=`<div class="dp-section"><div class="dp-label">Functions</div><ul class="dp-list">${d.functions.map(f=>`<li>${f}</li>`).join('')}</ul></div>`;
+      // FILES
+      const files=d.live_stats?.files||[];
+      if(files.length){
+        extra+=`<div class="dp-section"><div class="dp-label">Associated Files (${files.length})</div><ul class="dp-files">`;
+        files.forEach(f=>{extra+=`<li><span class="fname">${f.name||f.path}</span><span class="fsize">${formatSize(f.size)}</span></li>`});
+        extra+=`</ul></div>`;
+      }
+      // GROUPS
+      const groups=d.groups||[];
+      if(groups.length)extra+=`<div class="dp-section"><div class="dp-label">Groups</div><div class="dp-groups">${groups.map(g=>`<span class="dp-group">${g}</span>`).join('')}</div></div>`;
+      // Live stats
+      if(d.live_stats){
+        const stats=Object.entries(d.live_stats).filter(([k,v])=>typeof v!=='object'&&k!=='files'&&k!=='skills');
+        if(stats.length){
+          extra+=`<div class="dp-section"><div class="dp-label">Live Statistics</div><div class="dp-stats">`;
+          stats.forEach(([k,v])=>{extra+=`<div class="dp-stat"><div class="dp-stat-label">${k}</div><div class="dp-stat-val">${v}</div></div>`});
+          extra+=`</div></div>`;
+        }
+      }
+      body.innerHTML+=extra;
+    }
+  });
+
+  openDetail(h,'🧠',col,RNAME[region]?.toUpperCase()||region.toUpperCase(),col,'REGION');
+}
+
+function formatSize(bytes){
+  if(!bytes||bytes<1)return'0 B';
+  if(bytes<1024)return bytes+' B';
+  if(bytes<1048576)return(bytes/1024).toFixed(1)+' KB';
+  return(bytes/1048576).toFixed(1)+' MB';
+}
+
+/* ─── API FETCH ─── */
+async function fetchAPI(path){await findAPI();try{const r=await fetch(API+path,{signal:AbortSignal.timeout(5000)});return await r.json()}catch{return null}}
+
+/* ─── ACTIVITY LOG ─── */
+function addLog(msg,agent){
+  // Dedupe: skip if this exact msg+agent already exists in the feed
+  if(logs.some(l=>l.msg===msg&&l.agent===agent))return;
+  logs.unshift({t:new Date().toTimeString().split(' ')[0],msg,agent});
+  if(logs.length>35)logs.length=35;
+  document.getElementById('activity-feed').innerHTML=logs.map(l=>`<div class="logline"><span class="lt">${l.t}</span>${l.agent?`<span class="la" style="color:${ACOL[l.agent]||'#fff'}">${l.agent}</span>`:''}${l.msg}</div>`).join('');
+}
+
+/* ─── WEBSOCKET for LIVE UPDATES ─── */
+function connectWS(){
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  const host=API.replace(/^https?:\/\//,'');
+  // Try WebSocket on the tunnel or localhost
+  const wsUrl=`${proto}//${host}/ws`;
+  try{
+    ws=new WebSocket(wsUrl);
+    ws.onopen=()=>{console.log('WS connected');addLog('WebSocket connected','system')};
+    ws.onmessage=(e)=>{
+      try{
+        const data=JSON.parse(e.data);
+        if(data.agents)updateAgents(data.agents);
+        if(data.brain)updateBrain(data.brain);
+        if(data.activity&&data.activity.length)data.activity.filter(a=>!a.bootstrap).slice(0,2).forEach(a=>addLog(a.msg||a.description||'activity',a.agent||'system'));
+      }catch{}
+    };
+    ws.onclose=()=>{console.log('WS closed, reconnecting in 3s');setTimeout(connectWS,3000)};
+    ws.onerror=()=>{ws.close()};
+  }catch{console.log('WS failed, falling back to polling')}
+}
+// Also poll as fallback
+let pollInterval=null;
+
+/* ─── REFRESH / UPDATE ─── */
+let prevAgents={};
+function updateAgents(agents){
+  agentData=agents;
+  let html='';
+  const sorted=Object.entries(agents).sort((a,b)=>{
+    const ord={active:0,staged:1,inactive:2,dormant:3};
+    return(ord[a[1].status]??4)-(ord[b[1].status]??4);
+  });
+  sorted.forEach(([name,a])=>{
+    const sClass=a.status==='active'?'on':a.status==='staged'?'staged':a.status==='dormant'?'dormant':'off';
+    const col=ACOL[name]||a.color||'#64748B';
+    const region=a.region||'semantic';
+    const statusText=a.status==='active'?'●':a.status==='staged'?'◎':a.status==='dormant'?'○':'○';
+    html+=`<div class="agcard" onclick="showAgentDetail('${name}')"><div class="agdot ${sClass}" style="color:${col};background:${col}"></div><div class="agnam" style="color:${col}">${name}</div><div class="agreg">${RNAME[region]||region}</div></div>`;
+    positionAgent(name,region,a.status);
+    if(!knownAgents.has(name)){knownAgents.add(name);addLog(`Agent detected: ${name} [${a.status}]`,name)}
+    else if(prevAgents[name]&&prevAgents[name]!==a.status){addLog(`${name}: ${prevAgents[name]}→${a.status}`,name)}
+    prevAgents[name]=a.status;
+  });
+  document.getElementById('agent-list').innerHTML=html;
+}
+
+function updateBrain(brain){
+  regionData=brain;
+  let rhtml='';
+  const regions={
+    semantic:{label:'Semantic Cortex',sub:'FAISS',val:Array.isArray(brain.faiss)?brain.faiss.length:(brain.faiss?.count||0),max:1000,col:RCOL.semantic},
+    graph:{label:'Knowledge Graph',sub:'NetworkX',val:brain.graph?.nodes||0,max:500,col:RCOL.graph},
+    episodic:{label:'Episodic Memory',sub:'SQLite',val:brain.episodic?.total||0,max:1000,col:RCOL.episodic},
+    working:{label:'Working Memory',sub:'Redis',val:brain.redis?.keys||0,max:100,col:RCOL.working},
+    procedural:{label:'Procedural',sub:'Skills',val:brain.skills?.count||0,max:50,col:RCOL.procedural},
+    sensory:{label:'Sensory Buffer',sub:'FileWatch',val:0,max:20,col:RCOL.sensory}
+  };
+  Object.entries(regions).forEach(([k,r])=>{
+    const pct=Math.min(r.val/r.max*100,100);
+    rhtml+=`<div class="sec" style="cursor:pointer" onclick="showRegionDetail('${k}')"><div class="rrow"><span class="rlbl" style="color:${r.col}">${r.label}</span><span class="rval">${r.val}</span></div><div class="rrow"><span class="rlbl" style="font-size:6px">${r.sub}</span></div><div class="rbar"><div class="rfill" style="width:${pct}%;background:${r.col}"></div></div></div>`;
+    activityHeat[k]=Math.max(activityHeat[k]*.95-.008,0);
+  });
+  document.getElementById('region-list').innerHTML=rhtml;
+}
+
+async function refresh(){
+  const[agents,brain,sync,activity]=await Promise.all([fetchAPI('/api/agents'),fetchAPI('/api/brain'),fetchAPI('/api/sync'),fetchAPI('/api/activity')]);
+  if(agents)updateAgents(agents);
+  if(brain)updateBrain(brain);
+  if(sync){
+    document.getElementById('sync-info').innerHTML=`<div class="rrow"><span class="rlbl">Status</span><span class="rval" style="color:${sync.status==='connected'?'#00ff9d':'#ff2d55'}">${sync.status||'unknown'}</span></div><div class="rrow"><span class="rlbl">Last Sync</span><span class="rval">${sync.last_sync?new Date(sync.last_sync).toLocaleTimeString():'N/A'}</span></div>`;
+  }
+  if(activity&&activity.length)activity.filter(a=>!a.bootstrap).slice(0,2).forEach(a=>addLog(a.msg||a.description||'activity',a.agent||'system'));
+}
+
+/* ─── CLOCK ─── */
+function updateClock(){document.getElementById('clock').textContent=new Date().toTimeString().split(' ')[0]}
+setInterval(updateClock,1000);updateClock();
+
+// Close detail on Escape
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail()});
+
+/* ─── BOOT ─── */
+// ES module — THREE and OrbitControls already imported
+try{
+  init3D();
+  refresh();
+  // Try WebSocket first, fall back to polling
+  setTimeout(()=>{
+    connectWS();
+    pollInterval=setInterval(refresh,5000);
+  },1000);
+  // Loading bar animation
+  let p=0;const pi=setInterval(()=>{p+=12;document.getElementById('lprog').style.width=p+'%';if(p>=100)clearInterval(pi)},80);
+}catch(e){
+  console.error('init3D failed:',e);
+  document.getElementById('loading').innerHTML=`<div style="color:#ff2d55;font-size:12px;letter-spacing:2px">INIT ERROR: ${e.message}</div>`;
+  setTimeout(()=>{document.getElementById('loading').classList.add('hide')},5000);
+}
+
+// Expose for onclick
+window.showAgentDetail=showAgentDetail;
+window.showNeuronDetail=showNeuronDetail;
+window.showRegionDetail=showRegionDetail;
+window.showSynapseDetail=showSynapseDetail;
+</script></body></html>

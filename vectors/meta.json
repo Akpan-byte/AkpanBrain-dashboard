@@ -1,0 +1,13 @@
+{
+  "vectors": [
+    {
+      "id": 0,
+      "text_hash": "07e744b643dfaff12f16183a3910361ee112df61c9e10fc29255553500ceacb7",
+      "text_preview": "Test content for verification",
+      "metadata": {
+        "type": "test"
+      }
+    }
+  ],
+  "count": 1
+}

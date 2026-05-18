@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,max-scale=1,user-scalable=no">
+<title>SKILLS — AkpanBrain</title>
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#02020e;color:#fff;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:100vh}
+  .wrap{max-width:600px;margin:0 auto;padding:14px}
+  .hdr{text-align:center;padding:18px 0;border-bottom:1px solid rgba(0,245,255,0.2);margin-bottom:16px}
+  .logo{font-size:20px;font-weight:900;letter-spacing:4px;background:linear-gradient(90deg,#00f5ff,#00ff9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{font-size:10px;letter-spacing:3px;color:rgba(0,245,255,0.5);margin-top:4px;text-transform:uppercase}
+  .nav{display:flex;gap:5px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .nav a{flex-shrink:0;padding:7px 12px;background:rgba(0,20,40,0.8);border:1px solid rgba(0,245,255,0.2);border-radius:20px;color:#00f5ff;text-decoration:none;font-size:10px;letter-spacing:1px;font-weight:600}
+  .nav a.active{background:#00f5ff;color:#02020e}
+  .card{background:rgba(0,20,40,0.8);border:1px solid rgba(0,245,255,0.2);border-radius:12px;padding:14px;margin-bottom:10px}
+  .ctitle{font-size:9px;letter-spacing:3px;color:#00f5ff;text-transform:uppercase;margin-bottom:10px;font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .st{text-align:center;padding:10px 6px;background:rgba(0,0,0,0.3);border-radius:8px}
+  .sv{font-size:22px;font-weight:700;color:#00f5ff;font-variant-numeric:tabular-nums}
+  .sl{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-top:3px}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+  .row:last-child{border-bottom:none}
+  .key{font-size:12px;color:rgba(255,255,255,0.5)}
+  .val{font-size:12px;font-weight:600;color:#00f5ff}
+  .vgood{color:#00ff9d!important}
+  .vbad{color:#ff2d55!important}
+  .mem-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .ml{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.4);text-transform:uppercase;width:64px;flex-shrink:0}
+  .mb{flex:1;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
+  .mf{height:100%;background:linear-gradient(90deg,#00f5ff,#00ff9d);border-radius:3px;transition:width 1s}
+  .mp{font-size:9px;color:#00f5ff;width:30px;text-align:right;font-variant-numeric:tabular-nums}
+  .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .don{background:#00ff9d;box-shadow:0 0 8px #00ff9d}
+  .doff{background:#333}
+  .arow{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;margin-bottom:7px}
+  .aname{font-size:14px;font-weight:600;flex:1}
+  .ameta{font-size:9px;color:rgba(255,255,255,0.4);text-align:right}
+  .acaps{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .tag{padding:2px 7px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);border-radius:8px;font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.6)}
+  .prio{position:absolute;top:8px;right:10px;padding:1px 6px;background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:10px;font-size:8px;letter-spacing:1px;color:#ffd700}
+  .btn{display:block;width:100%;padding:13px;background:linear-gradient(90deg,#00f5ff,#00ff9d);color:#02020e;border:none;border-radius:10px;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;margin-top:14px;touch-action:manipulation}
+  .ts{text-align:center;font-size:9px;color:rgba(255,255,255,0.3);margin-top:10px;letter-spacing:1px}
+  .sec{font-size:9px;letter-spacing:3px;color:#00f5ff;text-transform:uppercase;margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(0,245,255,0.2)}
+  .agent-card{position:relative;background:rgba(0,20,40,0.8);border:1px solid rgba(0,245,255,0.2);border-radius:12px;padding:12px;margin-bottom:8px}
+  .agent-card.active{border-color:rgba(0,255,157,0.3)}
+  .agent-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--c,#00f5ff)}
+  .fi-row{display:flex;align-items:center;gap:10px;padding:9px;background:rgba(0,0,0,0.3);border-radius:8px;margin-bottom:5px}
+  .fi-i{font-size:12px;opacity:0.5;flex-shrink:0}
+  .fi-n{font-size:11px;color:rgba(255,255,255,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fi-s{font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px}
+  .fs{background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.3);border-radius:10px;padding:12px;text-align:center;margin-top:10px}
+  .fs-t{font-size:10px;letter-spacing:2px;color:#00ff9d;text-transform:uppercase;margin-bottom:4px}
+  .fs-d{font-size:11px;color:rgba(255,255,255,0.5)}
+  .badge{display:inline-block;padding:2px 8px;background:rgba(168,85,247,0.2);border:1px solid rgba(168,85,247,0.4);border-radius:20px;font-size:9px;color:#a855f7;letter-spacing:2px}
+  .cat-card{background:rgba(0,20,40,0.8);border:1px solid rgba(0,245,255,0.2);border-radius:12px;padding:12px;margin-bottom:8px}
+  .cat-title{font-size:12px;font-weight:700;color:#a855f7;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .cat-icon{font-size:14px}
+  .cat-count{margin-left:auto;padding:1px 7px;background:rgba(168,85,247,0.2);border-radius:10px;font-size:9px;color:#a855f7}
+  .skill-list{display:flex;flex-wrap:wrap;gap:4px}
+  .skill-tag{padding:3px 8px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.15);border-radius:5px;font-size:9px;color:rgba(255,255,255,0.7)}
+  .total-bar{background:rgba(0,20,40,0.8);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-around;text-align:center}
+  .tb-v{font-size:26px;font-weight:900;color:#a855f7}
+  .tb-l{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-top:3px}
+  .sync-status{background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.3);border-radius:12px;padding:14px;text-align:center;margin-bottom:14px}
+  .sync-icon{font-size:28px;margin-bottom:6px}
+  .sync-title{font-size:14px;font-weight:700;color:#00ff9d;letter-spacing:2px}
+  .sync-path{font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;letter-spacing:1px}
+  .folder-row{display:flex;align-items:center;gap:10px;padding:9px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:5px}
+  .folder-icon{font-size:16px}
+  .folder-name{font-size:12px;font-weight:600;color:#00f5ff;flex:1}
+  .folder-count{font-size:9px;color:rgba(255,255,255,0.4);background:rgba(0,245,255,0.1);padding:1px 7px;border-radius:10px}
+  .api-card{background:rgba(0,20,40,0.8);border:1px solid rgba(0,245,255,0.2);border-radius:12px;padding:14px;margin-bottom:10px}
+  .api-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .api-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+  .api-name{font-size:14px;font-weight:700}
+  .api-port{margin-left:auto;padding:2px 8px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);border-radius:10px;font-size:9px;color:#00f5ff;letter-spacing:1px}
+  .ep{padding:7px 9px;background:rgba(0,0,0,0.3);border-radius:6px;margin-bottom:7px}
+  .ep-u{font-size:10px;font-family:'SF Mono','Menlo',monospace;color:#00f5ff;word-break:break-all}
+  .ep-m{display:inline-block;padding:1px 5px;border-radius:4px;font-size:8px;font-weight:700;margin-right:5px;letter-spacing:1px}
+  .mg{background:rgba(0,255,157,0.2);color:#00ff9d}
+  .mp{background:rgba(255,215,0,0.2);color:#ffd700}
+  .ep-d{font-size:9px;color:rgba(255,255,255,0.4);margin-top:3px}
+  .loading{display:flex;align-items:center;justify-content:center;height:150px}
+  .spinner{width:28px;height:28px;border:2px solid rgba(0,245,255,0.2);border-top-color:#00f5ff;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-msg{background:rgba(255,45,85,0.1);border:1px solid rgba(255,45,85,0.3);border-radius:8px;padding:14px;color:#ff2d55;text-align:center;font-size:12px}
+  @media(max-width:400px){.grid{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr}}
+</style>
+
+</head><body>
+<div class="wrap">
+  <div class="nav"><a href="index.html">BRAIN</a><a href="mesh.html">MESH</a><a href="agents.html">AGENTS</a><a href="skills.html" class=active>SKILLS</a><a href="drive.html">DRIVE</a><a href="api.html">API</a></div>
+  <div class="hdr"><div class="logo">SKILLS REGISTRY</div><div class="sub">33 Skills Across 7 Agents</div></div>
+  <div class="total-bar"><div><div class="tb-v">33</div><div class="tb-l">Total Skills</div></div><div><div class="tb-v">7</div><div class="tb-l">Agents</div></div><div><div class="tb-v">8</div><div class="tb-l">Categories</div></div></div>
+  <div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">◆</span>Autonomous Ai Agents<span class="cat-count">14</span></div>
+  <div class="skill-list"><span class="skill-tag">hermes agent</span><span class="skill-tag">claude code</span><span class="skill-tag">nullclaw</span><span class="skill-tag">hybrid orchestration</span><span class="skill-tag">rate limiting</span><span class="skill-tag">session broadcast</span><span class="skill-tag">mcp generation</span><span class="skill-tag">multi agent mesh</span><span class="skill-tag">agent router</span><span class="skill-tag">auto delegate</span><span class="skill-tag">autonomous orchestrator</span><span class="skill-tag">codex</span><span class="skill-tag">opencode</span><span class="skill-tag">discord agent</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">◇</span>Github<span class="cat-count">6</span></div>
+  <div class="skill-list"><span class="skill-tag">github auth</span><span class="skill-tag">code review</span><span class="skill-tag">issues</span><span class="skill-tag">pr workflow</span><span class="skill-tag">repo management</span><span class="skill-tag">codebase inspection</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">○</span>Mlops<span class="cat-count">8</span></div>
+  <div class="skill-list"><span class="skill-tag">huggingface hub</span><span class="skill-tag">local llm</span><span class="skill-tag">modal serverless</span><span class="skill-tag">nvidia nim</span><span class="skill-tag">gguf quantization</span><span class="skill-tag">llama cpp</span><span class="skill-tag">fine tuning trl</span><span class="skill-tag">axolotl</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">◉</span>Devops<span class="cat-count">6</span></div>
+  <div class="skill-list"><span class="skill-tag">cron self healing</span><span class="skill-tag">system health</span><span class="skill-tag">gateway deployment</span><span class="skill-tag">mcp audit</span><span class="skill-tag">google ai studio cron</span><span class="skill-tag">setup 24/7 monitoring</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">■</span>Research<span class="cat-count">5</span></div>
+  <div class="skill-list"><span class="skill-tag">arxiv</span><span class="skill-tag">llm wiki</span><span class="skill-tag">polymarket</span><span class="skill-tag">blog watcher</span><span class="skill-tag">batch osint</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">▸</span>Workflow<span class="cat-count">5</span></div>
+  <div class="skill-list"><span class="skill-tag">full content extraction</span><span class="skill-tag">airtable</span><span class="skill-tag">linear</span><span class="skill-tag">notion</span><span class="skill-tag">google workspace</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">✦</span>Creative<span class="cat-count">4</span></div>
+  <div class="skill-list"><span class="skill-tag">ascii art</span><span class="skill-tag">design md</span><span class="skill-tag">excalidraw</span><span class="skill-tag">p5js</span></div>
+</div><div class="cat-card">
+  <div class="cat-title"><span class="cat-icon">◈</span>Data Science<span class="cat-count">2</span></div>
+  <div class="skill-list"><span class="skill-tag">database sql</span><span class="skill-tag">jupyter live kernel</span></div>
+</div>
+  <button class="btn" onclick="location.reload()">⟳ REFRESH</button>
+  <div class="ts" id="ts">Updated: 2026-05-17T04:23:00+00:00</div>
+</div>
+</body></html>
