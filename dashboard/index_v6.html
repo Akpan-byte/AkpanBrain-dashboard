@@ -3,17 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>AkpanBrain — Neural Dashboard v7</title>
+<title>AkpanBrain — Neural Dashboard v6</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0a0a0a;--panel:rgba(8,8,8,0.95);--border:#1a1a1a;--red:#ff0040;--silver:#c0c0c0;--dim:#333;--glow:#ff004060}
 html,body{background:var(--bg);color:var(--silver);font-family:'Courier New',monospace;overflow:hidden;height:100%;width:100%;touch-action:none}
 #cv{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
 #bloom{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;mix-blend-mode:screen;filter:blur(8px) brightness(1.5);opacity:0.35;image-rendering:pixelated}
-#scanlines{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);opacity:0.5}
-#vignette{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.6) 100%)}
-#scan-sweep{position:fixed;top:0;left:0;width:100%;height:4px;z-index:4;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(255,0,64,0.06),transparent);animation:sweep 4s linear infinite}
-@keyframes sweep{0%{top:-4px}100%{top:100%}}
 #hud{position:fixed;top:0;right:0;width:300px;height:100vh;z-index:10;overflow-y:auto;background:var(--panel);border-left:1px solid var(--border);scrollbar-width:thin;scrollbar-color:#333 transparent;transition:transform .3s ease}
 #hud::-webkit-scrollbar{width:3px}
 #hud::-webkit-scrollbar-thumb{background:#222}
@@ -40,8 +36,7 @@ html,body{background:var(--bg);color:var(--silver);font-family:'Courier New',mon
 .dot.on{background:var(--red);box-shadow:0 0 4px var(--red)}
 .dot.off{background:#222}
 #region-list{padding:6px 14px}
-.region-item{font-size:8px;padding:2px 0;color:#444;cursor:pointer;transition:background .15s}
-.region-item:hover{background:#151515}
+.region-item{font-size:8px;padding:2px 0;color:#444}
 .region-item span{color:var(--red);margin-right:3px}
 #feed{padding:6px 14px;max-height:160px;overflow-y:auto}
 .feed-item{font-size:7px;color:#333;padding:1px 0;border-bottom:1px solid #0c0c0c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -52,14 +47,7 @@ html,body{background:var(--bg);color:var(--silver);font-family:'Courier New',mon
 .tab{font-size:8px;padding:5px 8px;color:#333;cursor:pointer;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid transparent}
 .tab.active{color:var(--red);border-bottom-color:var(--red)}
 .tab:hover{color:var(--silver)}
-#detail{padding:10px 14px;font-size:9px;color:#666;display:none;border-top:1px solid var(--border);background:#0a0a0a}
-#detail h3{font-size:10px;color:var(--red);margin-bottom:6px;letter-spacing:1px}
-#detail .d-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #0e0e0e}
-#detail .d-row .dk{color:#555;font-size:8px}
-#detail .d-row .dv{color:var(--silver);font-size:8px}
-#detail .close-btn{float:right;cursor:pointer;color:#ff004060;font-size:10px}
-#detail .close-btn:hover{color:var(--red)}
-#tooltip{position:fixed;z-index:20;pointer-events:none;background:rgba(0,0,0,0.9);border:1px solid #ff004040;color:var(--silver);font-size:8px;padding:4px 8px;border-radius:3px;max-width:200px;display:none;font-family:'Courier New',monospace;letter-spacing:0.5px}
+#detail{padding:6px 14px;font-size:8px;color:#444;display:none}
 #touch-hint{display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:15;font-size:8px;color:#333;letter-spacing:1px;pointer-events:none}
 @media(max-width:768px){#touch-hint{display:block}}
 </style>
@@ -68,11 +56,7 @@ html,body{background:var(--bg);color:var(--silver);font-family:'Courier New',mon
 <div id="ld">INITIALIZING NEURAL CORE...</div>
 <canvas id="cv"></canvas>
 <canvas id="bloom"></canvas>
-<div id="scanlines"></div>
-<div id="vignette"></div>
-<div id="scan-sweep"></div>
-<div id="tooltip"></div>
-<div id="touch-hint">DRAG TO ROTATE · PINCH TO ZOOM · TAP TO INSPECT</div>
+<div id="touch-hint">DRAG TO ROTATE · PINCH TO ZOOM</div>
 <div id="hud">
  <div id="hud-handle" onclick="this.parentElement.classList.toggle('expanded')"><div></div></div>
  <div class="hdr"><h2>● AkpanBrain</h2><div class="sub" id="brain-status">Neural Network Dashboard</div></div>
@@ -93,21 +77,17 @@ html,body{background:var(--bg);color:var(--silver);font-family:'Courier New',mon
   <div class="hdr"><h2>Drive Sync</h2><div class="sub">Google Drive Integration</div></div>
   <div id="drive-info"></div>
  </div>
- <div id="detail">
-  <span class="close-btn" onclick="document.getElementById('detail').style.display='none'">✕</span>
-  <h3 id="detail-title">—</h3>
-  <div id="detail-body"></div>
- </div>
+ <div id="detail"></div>
 </div>
 <div id="api-status">CONNECTING...</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// ALL STATE AT TOP
+// ALL STATE DECLARATIONS AT TOP (no temporal dead zone issues)
 // ═══════════════════════════════════════════════════════════════════
 
-var EMBEDDED={"agents":{"hermes":{"status":"active","color":"#FF0000","type":"reasoning","desc":"Hermes Agent \u2014 autonomous AI agent orchestrator","region":"working","pid":"82153","cpu":"0.0","mem":"0.2","detected_by":"process_scan","last_seen":1779140774563,"current_file":null,"current_action":"processing","cmdline":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},"gemini-cli":{"status":"active","color":"#C0C0C0","type":"search","desc":"Google Gemini CLI","region":"semantic","pid":"83748","cpu":"0.0","mem":"0.1","detected_by":"process_scan","last_seen":1779140774564,"current_file":null,"current_action":"processing","cmdline":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},"kilo-code":{"status":"inactive","color":"#800000","type":"coding","desc":"Kilo Code","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"kimi-code":{"status":"active","color":"#A0A0A0","type":"coding","desc":"Kimi Code (Moonshot)","region":"procedural","pid":"645958","cpu":"0.5","mem":"0.5","detected_by":"process_scan","last_seen":1779140774566,"current_file":null,"current_action":"processing","cmdline":"kimi code"},"nullclaw":{"status":"inactive","color":"#FF3333","type":"routing","desc":"Nullclaw AI Router","region":"working","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"claude-code":{"status":"inactive","color":"#C0C0C0","type":"coding","desc":"Claude Code","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"opencode":{"status":"inactive","color":"#404040","type":"coding","desc":"OpenCode","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"qwen-code":{"status":"inactive","color":"#606060","type":"llm","desc":"Qwen Code","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"codebuff":{"status":"active","color":"#808080","type":"coding","desc":"CodeBuff","region":"procedural","pid":"209651","cpu":"0.0","mem":"0.2","detected_by":"process_scan","last_seen":1779140774572,"current_file":null,"current_action":"processing","cmdline":"node /config/.nvm/versions/node/v20.20.0/bin/codebuff"},"jcode":{"status":"active","color":"#555555","type":"coding","desc":"JCode","region":"episodic","pid":"93889","cpu":"0.0","mem":"0.2","detected_by":"process_scan","last_seen":1779140774573,"current_file":null,"current_action":"building","cmdline":"/config/.jcode/builds/stable/jcode --provider auto serve"},"claw-code":{"status":"inactive","color":"#FF4444","type":"coding","desc":"Claw Code","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"cline":{"status":"inactive","color":"#B0B0B0","type":"coding","desc":"Cline","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"ironclaw":{"status":"inactive","color":"#CC0000","type":"security","desc":"IronClaw","region":"working","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"openfang":{"status":"inactive","color":"#FF2222","type":"coding","desc":"OpenFang","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"codex":{"status":"inactive","color":"#E0E0E0","type":"coding","desc":"OpenAI Codex CLI","region":"procedural","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null},"9router":{"status":"inactive","color":"#FF0000","type":"routing","desc":"9Router \u2014 LLM routing proxy on :20128","region":"episodic","pid":null,"cpu":"0","mem":"0","detected_by":"signature_scan","last_seen":0,"current_file":null,"current_action":null}},"brain":{"semantic":{"name":"Semantic Cortex","backend":"FAISS","color":"#C0C0C0","file_count":2,"total_size":12589,"files":[{"path":"vectors/brain.index","size":12333,"name":"brain.index","ext":".index","mtime":1779006542.1113129,"region":"semantic"},{"path":"vectors/meta.json","size":256,"name":"meta.json","ext":".json","mtime":1779006542.7583182,"region":"semantic"}]},"graph":{"name":"Knowledge Graph","backend":"NetworkX","color":"#808080","file_count":2,"total_size":31660,"files":[{"path":"graph/brain.graphml","size":31660,"name":"brain.graphml","ext":".graphml","mtime":1779006544.1433296,"region":"graph"},{"path":"graph/.keep","size":0,"name":".keep","ext":"","mtime":1778987865.652537,"region":"graph"}]},"episodic":{"name":"Episodic Memory","backend":"SQLite","color":"#FF0000","file_count":1,"total_size":53248,"files":[{"path":"memory/episodic.db","size":53248,"name":"episodic.db","ext":".db","mtime":1779006543.4733243,"region":"episodic"}]},"working":{"name":"Working Memory","backend":"Redis","color":"#A0A0A0","file_count":2,"total_size":132,"files":[{"path":"cache/.last_sync","size":132,"name":".last_sync","ext":"","mtime":1779041839.6060712,"region":"working"},{"path":"cache/.keep","size":0,"name":".keep","ext":"","mtime":1778987865.651537,"region":"working"}]},"procedural":{"name":"Procedural Cortex","backend":"Skills","color":"#FF3333","file_count":0,"total_size":0,"files":[]},"sensory":{"name":"Sensory Buffer","backend":"FileWatch","color":"#D0D0D0","file_count":1,"total_size":0,"files":[{"path":"sensory/.keep","size":0,"name":".keep","ext":"","mtime":1778987865.653537,"region":"sensory"}]}},"positions":{"hermes":{"region":"working","file":null,"action":"processing","x":0.8919664359264844,"y":0.6333437147066013,"z":0.8995786893512199,"ts":1779140774395},"gemini-cli":{"region":"semantic","file":null,"action":"processing","x":-1.941022143567118,"y":0.7933032703685611,"z":0.11264449129614218,"ts":1779140774395},"kimi-code":{"region":"procedural","file":null,"action":"processing","x":2.1085954846527604,"y":-0.22969036278212582,"z":0.09250581341126288,"ts":1779140774395},"codebuff":{"region":"procedural","file":null,"action":"processing","x":1.920793641636207,"y":-0.10029727435227256,"z":0.09270972262716888,"ts":1779140774395},"jcode":{"region":"episodic","file":null,"action":"building","x":-0.06683265498023916,"y":-0.535868353897387,"z":-0.6574746623839074,"ts":1779140774395},"kilo-code":{"region":"procedural","file":"None","action":"status_inactive","x":1.948966561650557,"y":-0.24842194998728734,"z":0.014061342054543013,"ts":1779117572013,"status":"inactive"},"nullclaw":{"region":"working","file":"None","action":"status_inactive","x":1.0326749872641623,"y":0.5052148916002194,"z":0.6726204211626556,"ts":1779117572013,"status":"inactive"},"claude-code":{"region":"procedural","file":"None","action":"status_inactive","x":1.9384645279750088,"y":-0.08897632744445803,"z":-0.06065120064177068,"ts":1779117572013,"status":"inactive"},"opencode":{"region":"procedural","file":"None","action":"status_inactive","x":2.1479409862128622,"y":-0.15758633226405697,"z":0.19090019302651706,"ts":1779117572013,"status":"inactive"},"qwen-code":{"region":"procedural","file":"None","action":"status_inactive","x":2.0617150584672643,"y":-0.1460014226962165,"z":-0.16327468550063326,"ts":1779117572013,"status":"inactive"},"claw-code":{"region":"procedural","file":"None","action":"status_inactive","x":2.0191695527400952,"y":-0.2788882090124799,"z":0.1115443634303269,"ts":1779117572013,"status":"inactive"},"cline":{"region":"procedural","file":"None","action":"status_inactive","x":1.811821015229278,"y":-0.16102299716035745,"z":0.01597949488413004,"ts":1779117572013,"status":"inactive"},"ironclaw":{"region":"working","file":"None","action":"status_inactive","x":0.8662765278513039,"y":0.6219530666026893,"z":0.8272967605284293,"ts":1779117572013,"status":"inactive"},"openfang":{"region":"procedural","file":"None","action":"status_inactive","x":1.834864714549643,"y":-0.2845926198010322,"z":-0.11473012428191597,"ts":1779117572013,"status":"inactive"},"codex":{"region":"procedural","file":"None","action":"status_inactive","x":2.0417475364121587,"y":-0.06495553608067031,"z":-0.07760054352888238,"ts":1779117572013,"status":"inactive"},"9router":{"region":"episodic","file":"None","action":"status_inactive","x":0.0037136557207007037,"y":-0.3759608442363717,"z":-0.6945091339113396,"ts":1779117572013,"status":"inactive"}},"regions":{"semantic":{"x":-2.0,"y":0.8,"z":0.0},"graph":{"x":-1.0,"y":0.4,"z":-1.2},"episodic":{"x":0.0,"y":-0.5,"z":-0.8},"working":{"x":1.0,"y":0.6,"z":0.8},"procedural":{"x":2.0,"y":-0.2,"z":0.0},"sensory":{"x":0.5,"y":1.0,"z":-0.5}}};
+var EMBEDDED=$EMBEDded$;
 var agents={},brain={},positions={},regions={},activityFeed=[];
 var scene,cam,ren,clock=null;
 
@@ -115,7 +95,7 @@ var scene,cam,ren,clock=null;
 var NEURON_COUNT=40;
 var HUB_COUNT=8;
 var MAX_SYNAPSES=200;
-var MAX_PULSES=12;
+var MAX_PULSES=5;
 
 // Region data
 var REGION_POS={
@@ -127,10 +107,6 @@ var REGION_COLORS={
  semantic:0xc0c0c0,graph:0x808080,episodic:0xff0040,
  working:0xa0a0a0,procedural:0xff3333,sensory:0xd0d0d0
 };
-var REGION_NAMES={
- semantic:'Semantic Cortex',graph:'Knowledge Graph',episodic:'Memory Hippocampus',
- working:'Working Memory',procedural:'Procedural Cortex',sensory:'Sensory Buffer'
-};
 var AGENT_COLORS={
  hermes:0xff0040,'gemini-cli':0x4488ff,'kilo-code':0x800000,'kimi-code':0xa0a0ff,
  nullclaw:0xff3333,'claude-code':0xcc8844,opencode:0x404040,'qwen-code':0x6060ff,
@@ -138,10 +114,9 @@ var AGENT_COLORS={
  ironclaw:0xcc0000,openfang:0xff2222,codex:0xe0e0e0,'9router':0xff0040
 };
 
-// Scene objects
+// Scene objects (filled by init)
 var neuronPositions=[];
 var neuronIsHub=[];
-var neuronRegionMap=[]; // which region each neuron belongs to
 var synapseData=[];
 var neuronInstMesh=null;
 var neuronGlowInstMesh=null;
@@ -150,24 +125,11 @@ var agentOrbs={};
 var pulsePool=[];
 var neuronFireTimes=new Float32Array(NEURON_COUNT);
 var nextFire=0;
-var electricArcs=[]; // lightning bolts between firing neurons
 
 // Camera
 var camAngle=0,camRadius=7,camHeight=1.5;
 var isDragging=false,pinchDist=0;
 var dragStart={x:0,y:0},dragAngle=0,dragHeight=0;
-
-// Raycasting
-var raycaster=new THREE.Raycaster();
-var mouse=new THREE.Vector2();
-var hoveredObj=null;
-var selectedObj=null;
-
-// Tooltip
-var tooltipEl=null;
-
-// Region core meshes (for raycasting)
-var regionMeshes={};
 
 // WebSocket
 var ws=null,wsReconnect=0;
@@ -179,7 +141,7 @@ var ws=null,wsReconnect=0;
 function init3D(){
  clock=new THREE.Clock();
  scene=new THREE.Scene();
- scene.fog=new THREE.FogExp2(0x0a0a0a,0.025);
+ scene.fog=new THREE.FogExp2(0x0a0a0a,0.035);
  
  cam=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,100);
  cam.position.set(0,camHeight,camRadius);
@@ -195,7 +157,7 @@ function init3D(){
  ren.setSize(window.innerWidth,window.innerHeight);
  ren.setClearColor(0x0a0a0a,1);
  
- // Bloom canvas
+ // Bloom canvas (low-res copy for CSS blur bloom effect)
  var bloomCv=document.getElementById('bloom');
  bloomCv.width=Math.floor(window.innerWidth/4);
  bloomCv.height=Math.floor(window.innerHeight/4);
@@ -203,9 +165,6 @@ function init3D(){
  bloomCv.style.height=window.innerHeight+'px';
  window._bloomCv=bloomCv;
  window._bloomCtx=bloomCv.getContext('2d');
- 
- // Tooltip element
- tooltipEl=document.getElementById('tooltip');
  
  // Lighting
  scene.add(new THREE.AmbientLight(0x111111,0.3));
@@ -224,7 +183,6 @@ function init3D(){
  buildAgentOrbs();
  initPulsePool();
  buildStarfield();
- buildGridFloor();
  
  window.addEventListener('resize',onResize);
  document.getElementById('ld').style.display='none';
@@ -235,43 +193,27 @@ function init3D(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// INPUT (touch + mouse + click)
+// INPUT (touch + mouse)
 // ═══════════════════════════════════════════════════════════════════
 
 function setupInput(){
  var cv=ren.domElement;
- var pointerDownTime=0;
- var pointerDownPos={x:0,y:0};
  
  cv.addEventListener('pointerdown',function(e){
   isDragging=true;
-  pointerDownTime=Date.now();
-  pointerDownPos={x:e.clientX,y:e.clientY};
   dragStart={x:e.clientX,y:e.clientY};
   dragAngle=camAngle;
   dragHeight=camHeight;
   if(e.pointerId!==undefined)cv.setPointerCapture(e.pointerId);
  });
  
- window.addEventListener('pointerup',function(e){
-  isDragging=false;
-  // Detect click (short press, minimal movement)
-  var dt=Date.now()-pointerDownTime;
-  var dx=Math.abs(e.clientX-pointerDownPos.x);
-  var dy=Math.abs(e.clientY-pointerDownPos.y);
-  if(dt<300&&dx<8&&dy<8){
-   handleClick(e.clientX,e.clientY);
-  }
- });
+ window.addEventListener('pointerup',function(){isDragging=false});
  
  window.addEventListener('pointermove',function(e){
-  if(isDragging){
-   camAngle=dragAngle+(e.clientX-dragStart.x)*0.004;
-   camHeight=dragHeight-(e.clientY-dragStart.y)*0.008;
-   camHeight=Math.max(-2,Math.min(6,camHeight));
-  }
-  // Update hover
-  updateHover(e.clientX,e.clientY);
+  if(!isDragging)return;
+  camAngle=dragAngle+(e.clientX-dragStart.x)*0.004;
+  camHeight=dragHeight-(e.clientY-dragStart.y)*0.008;
+  camHeight=Math.max(-2,Math.min(6,camHeight));
  });
  
  cv.addEventListener('wheel',function(e){
@@ -304,198 +246,6 @@ function setupInput(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// RAYCASTING — Click & Hover in 3D
-// ═══════════════════════════════════════════════════════════════════
-
-function getClickableObjects(){
- var objs=[];
- // Agent hitboxes (transparent, large click targets)
- var names=Object.keys(agentOrbs);
- for(var i=0;i<names.length;i++){
-  var orb=agentOrbs[names[i]];
-  if(orb.visible&&orb.hitbox){
-   orb.hitbox.visible=true; // ensure it stays raycastable
-   objs.push(orb.hitbox);
-  }
- }
- // Region cores
- var rNames=Object.keys(regionMeshes);
- for(var i=0;i<rNames.length;i++){
-  regionMeshes[rNames[i]].userData={type:'region',name:rNames[i]};
-  objs.push(regionMeshes[rNames[i]]);
- }
- // Also add neuron instances for clicking
- if(neuronInstMesh){
-  neuronInstMesh.userData={type:'neurons'};
-  objs.push(neuronInstMesh);
- }
- return objs;
-}
-
-function handleClick(cx,cy){
- mouse.x=(cx/window.innerWidth)*2-1;
- mouse.y=-(cy/window.innerHeight)*2+1;
- raycaster.setFromCamera(mouse,cam);
- var hits=raycaster.intersectObjects(getClickableObjects());
- 
- if(hits.length>0){
-  var hit=hits[0].object;
-  var ud=hit.userData;
- if(ud){
- if(ud.type==='agent'){
- showAgentDetail(ud.name);
- focusOnAgent(ud.name);
- }else if(ud.type==='region'){
- showRegionDetail(ud.name);
- focusOnPosition(REGION_POS[ud.name]);
- }else if(ud.type==='neurons'&&hits[0].instanceId!==undefined){
- // Clicked a neuron instance
- var nid=hits[0].instanceId;
- var nRegion=neuronRegionMap[nid]||'unknown';
- var isHub=neuronIsHub[nid]||false;
- var nPos=neuronPositions[nid];
- showNeuronDetail(nid,nRegion,isHub,nPos);
- focusOnPosition(nPos);
- }
- }
-  selectedObj=hit;
- }else{
-  // Clicked empty space — deselect
-  document.getElementById('detail').style.display='none';
-  selectedObj=null;
- }
-}
-
-function updateHover(cx,cy){
- mouse.x=(cx/window.innerWidth)*2-1;
- mouse.y=-(cy/window.innerHeight)*2+1;
- raycaster.setFromCamera(mouse,cam);
- var hits=raycaster.intersectObjects(getClickableObjects());
- 
- if(hits.length>0){
-  var hit=hits[0].object;
-  var ud=hit.userData;
-  if(ud){
-   tooltipEl.style.display='block';
-   tooltipEl.style.left=(cx+14)+'px';
-   tooltipEl.style.top=(cy-10)+'px';
-   if(ud.type==='agent'){
-    var a=agents[ud.name]||{};
-    tooltipEl.innerHTML='<b style="color:#'+(AGENT_COLORS[ud.name]||0xff0040).toString(16).padStart(6,'0')+'">'+ud.name+'</b><br>'+((a.status||'unknown').toUpperCase())+' · '+(a.type||'agent');
- }else if(ud.type==='region'){
- tooltipEl.innerHTML='<b style="color:#'+(REGION_COLORS[ud.name]||0xff0040).toString(16).padStart(6,'0')+'">'+(REGION_NAMES[ud.name]||ud.name)+'</b><br>brain region';
- }else if(ud.type==='neurons'&&hits[0].instanceId!==undefined){
- var nid=hits[0].instanceId;
- var isHub=neuronIsHub[nid]||false;
- tooltipEl.innerHTML='<b style="color:#ff0040">NEURON #'+nid+'</b><br>'+(isHub?'HUB':'NORMAL')+' · '+(REGION_NAMES[neuronRegionMap[nid]]||neuronRegionMap[nid]||'?');
- }
-   document.body.style.cursor='pointer';
-   hoveredObj=hit;
-  }
- }else{
-  tooltipEl.style.display='none';
-  document.body.style.cursor='default';
-  hoveredObj=null;
- }
-}
-
-function focusOnAgent(name){
- var orb=agentOrbs[name];
- if(orb&&orb.visible){
-  focusOnPosition(orb.currentPos);
- }
-}
-
-function focusOnPosition(pos){
- camHeight=(pos.y||0)+1;
- camRadius=4;
- camAngle=Math.atan2(pos.x||0,pos.z||0)+Math.PI*0.3;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// DETAIL PANELS (click to inspect)
-// ═══════════════════════════════════════════════════════════════════
-
-function showAgentDetail(name){
- var a=agents[name]||{};
- var pos=positions[name]||{};
- var det=document.getElementById('detail');
- document.getElementById('detail-title').textContent=name.toUpperCase();
- 
- var html='';
- html+='<div class="d-row"><span class="dk">STATUS</span><span class="dv" style="color:'+(a.status==='active'?'#ff0040':'#333')+'">● '+(a.status||'unknown').toUpperCase()+'</span></div>';
- html+='<div class="d-row"><span class="dk">TYPE</span><span class="dv">'+(a.type||'agent')+'</span></div>';
- if(pos.region)html+='<div class="d-row"><span class="dk">REGION</span><span class="dv">'+(REGION_NAMES[pos.region]||pos.region)+'</span></div>';
- if(pos.file)html+='<div class="d-row"><span class="dk">FILE</span><span class="dv">'+pos.file+'</span></div>';
- if(pos.action)html+='<div class="d-row"><span class="dk">ACTION</span><span class="dv">'+pos.action+'</span></div>';
- if(pos.x!==undefined)html+='<div class="d-row"><span class="dk">POS</span><span class="dv">'+(pos.x||0).toFixed(1)+', '+(pos.y||0).toFixed(1)+', '+(pos.z||0).toFixed(1)+'</span></div>';
- 
- // Find recent activity for this agent
- var agentActivity=activityFeed.filter(function(e){return e.agent===name}).slice(0,5);
- if(agentActivity.length>0){
-  html+='<div style="margin-top:6px;font-size:7px;color:#ff004060;letter-spacing:1px">RECENT ACTIVITY</div>';
-  for(var i=0;i<agentActivity.length;i++){
-   var e=agentActivity[i];
-   var ts=new Date(e.ts).toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-   html+='<div class="d-row"><span class="dk">'+ts+'</span><span class="dv">'+e.action+' '+(e.target||'')+'</span></div>';
-  }
- }
- 
- document.getElementById('detail-body').innerHTML=html;
- det.style.display='block';
-}
-
-function showRegionDetail(name){
- var b=brain[name]||{};
- var det=document.getElementById('detail');
- document.getElementById('detail-title').textContent=(REGION_NAMES[name]||name).toUpperCase();
- 
- var html='';
- html+='<div class="d-row"><span class="dk">BACKEND</span><span class="dv">'+(b.backend||'unknown')+'</span></div>';
- html+='<div class="d-row"><span class="dk">FILES</span><span class="dv">'+(b.file_count||0)+'</span></div>';
- html+='<div class="d-row"><span class="dk">STATUS</span><span class="dv" style="color:#ff0040">● ONLINE</span></div>';
- 
- // Count agents in this region
- var agentsInRegion=Object.keys(positions).filter(function(n){return positions[n].region===name});
- if(agentsInRegion.length>0){
-  html+='<div style="margin-top:6px;font-size:7px;color:#ff004060;letter-spacing:1px">AGENTS IN REGION</div>';
-  for(var i=0;i<agentsInRegion.length;i++){
-   var aName=agentsInRegion[i];
-   var a=agents[aName]||{};
-   html+='<div class="d-row"><span class="dk">'+aName+'</span><span class="dv">'+(a.status||'?')+'</span></div>';
-  }
- }
- 
- document.getElementById('detail-body').innerHTML=html;
- det.style.display='block';
-}
-
-function showNeuronDetail(nid,region,isHub,pos){
- var det=document.getElementById('detail');
- document.getElementById('detail-title').textContent='NEURON #'+nid;
- 
- var html='';
- html+='<div class="d-row"><span class="dk">TYPE</span><span class="dv" style="color:#ff0040">'+(isHub?'HUB':'NORMAL')+'</span></div>';
- html+='<div class="d-row"><span class="dk">REGION</span><span class="dv">'+(REGION_NAMES[region]||region)+'</span></div>';
- html+='<div class="d-row"><span class="dk">POS</span><span class="dv">('+(pos?pos.x.toFixed(2):'?')+', '+(pos?pos.y.toFixed(2):'?')+', '+(pos?pos.z.toFixed(2):'?')+')</span></div>';
- 
- // Count synapses
- var synCount=0;
- for(var k=0;k<synapseData.length;k++){
-  if(synapseData[k].i===nid||synapseData[k].j===nid)synCount++;
- }
- html+='<div class="d-row"><span class="dk">SYNAPSES</span><span class="dv">'+synCount+'</span></div>';
- html+='<div class="d-row"><span class="dk">FIRED</span><span class="dv">'+(neuronFireTimes[nid]>0?'● ACTIVE':'○ IDLE')+'</span></div>';
- html+='<div class="d-row"><span class="dk">LAST FIRE</span><span class="dv">'+(neuronFireTimes[nid]>0?(clock.getElapsedTime()-neuronFireTimes[nid]).toFixed(2)+'s ago':'never')+'</span></div>';
- 
- // Trigger a visual fire on this neuron
- fireNeuron(nid);
- 
- document.getElementById('detail-body').innerHTML=html;
- det.style.display='block';
-}
-
-// ═══════════════════════════════════════════════════════════════════
 // NEURON GENERATION
 // ═══════════════════════════════════════════════════════════════════
 
@@ -505,7 +255,6 @@ function generateNeurons(){
   var isHub=i<HUB_COUNT;
   neuronIsHub.push(isHub);
   var rk=rks[Math.floor(Math.random()*rks.length)];
-  neuronRegionMap.push(rk);
   var rp=REGION_POS[rk];
   var spread=isHub?1.5:2;
   neuronPositions.push(new THREE.Vector3(
@@ -518,19 +267,19 @@ function generateNeurons(){
  // Compute synapses
  var maxDist=2.8;
  for(var i=0;i<NEURON_COUNT;i++){
- for(var j=i+1;j<NEURON_COUNT;j++){
-  var d=neuronPositions[i].distanceTo(neuronPositions[j]);
-  if(d<maxDist&&Math.random()<0.15){
-   synapseData.push({i:i,j:j,dist:d,phase:Math.random()});
-   if(synapseData.length>=MAX_SYNAPSES)break;
+  for(var j=i+1;j<NEURON_COUNT;j++){
+   var d=neuronPositions[i].distanceTo(neuronPositions[j]);
+   if(d<maxDist&&Math.random()<0.15){
+    synapseData.push({i:i,j:j,dist:d,phase:Math.random()});
+    if(synapseData.length>=MAX_SYNAPSES)break;
+   }
   }
- }
- if(synapseData.length>=MAX_SYNAPSES)break;
+  if(synapseData.length>=MAX_SYNAPSES)break;
  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// INSTANCED NEURONS
+// INSTANCED NEURONS (2 draw calls total for all 40 neurons)
 // ═══════════════════════════════════════════════════════════════════
 
 function buildInstancedNeurons(){
@@ -550,13 +299,13 @@ function buildInstancedNeurons(){
   var p=neuronPositions[i];
   var coreScale=isHub?0.08:0.05;
   var glowScale=isHub?0.25:0.15;
- 
+  
   dummy.makeScale(coreScale,coreScale,coreScale);
   dummy.setPosition(p.x,p.y,p.z);
   neuronInstMesh.setMatrixAt(i,dummy);
   color.setHex(isHub?0xff0040:0xff2244);
   neuronInstMesh.setColorAt(i,color);
- 
+  
   dummy.makeScale(glowScale,glowScale,glowScale);
   dummy.setPosition(p.x,p.y,p.z);
   neuronGlowInstMesh.setMatrixAt(i,dummy);
@@ -574,7 +323,7 @@ function buildInstancedNeurons(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SYNAPSE LINES
+// SYNAPSE LINES (1 draw call for all connections)
 // ═══════════════════════════════════════════════════════════════════
 
 function buildSynapseLines(){
@@ -596,99 +345,12 @@ function buildSynapseLines(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ELECTRIC ARCS (lightning between firing neurons)
-// ═══════════════════════════════════════════════════════════════════
-
-var MAX_ARCS=6;
-var arcPool=[];
-
-function initArcPool(){
- for(var i=0;i<MAX_ARCS;i++){
-  var geo=new THREE.BufferGeometry();
-  var positions=new Float32Array(12*3); // 12 segments per arc
-  geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-  var mat=new THREE.LineBasicMaterial({
-   color:0xff0040,transparent:true,opacity:0,
-   blending:THREE.AdditiveBlending,depthWrite:false
-  });
-  var line=new THREE.Line(geo,mat);
-  line.visible=false;
-  scene.add(line);
-  arcPool.push({line:line,geo:geo,alive:false,t:0,life:0.3});
- }
-}
-
-function spawnArc(start,end,color){
- for(var i=0;i<arcPool.length;i++){
-  var arc=arcPool[i];
-  if(!arc.alive){
-   arc.alive=true;
-   arc.t=0;
-   arc.life=0.15+Math.random()*0.2;
-   arc.line.visible=true;
-   arc.line.material.color.setHex(color||0xff0040);
-   arc.line.material.opacity=0.8;
-   
-   // Build jagged lightning path
-   var posArr=arc.geo.attributes.position.array;
-   var segs=11;
-   for(var s=0;s<=segs;s++){
-    var frac=s/segs;
-    var x=start.x+(end.x-start.x)*frac;
-    var y=start.y+(end.y-start.y)*frac;
-    var z=start.z+(end.z-start.z)*frac;
-    // Add jitter for lightning effect
-    if(s>0&&s<segs){
-     var jitter=0.15*(1-Math.abs(frac-0.5)*2);
-     x+=(Math.random()-0.5)*jitter;
-     y+=(Math.random()-0.5)*jitter;
-     z+=(Math.random()-0.5)*jitter;
-    }
-    posArr[s*3]=x;
-    posArr[s*3+1]=y;
-    posArr[s*3+2]=z;
-   }
-   arc.geo.attributes.position.needsUpdate=true;
-   return;
-  }
- }
-}
-
-function updateArcs(dt){
- for(var i=0;i<arcPool.length;i++){
-  var arc=arcPool[i];
-  if(!arc.alive)continue;
-  arc.t+=dt;
-  if(arc.t>=arc.life){
-   arc.alive=false;
-   arc.line.visible=false;
-   arc.line.material.opacity=0;
-   continue;
-  }
-  // Fade out + flicker
-  var fade=1-arc.t/arc.life;
-  arc.line.material.opacity=fade*0.6*(0.5+Math.random()*0.5);
-  
-  // Re-jitter for flickering effect
-  var posArr=arc.geo.attributes.position.array;
-  // Just jitter the middle segments slightly each frame
-  for(var s=1;s<11;s++){
-   posArr[s*3]+=(Math.random()-0.5)*0.02;
-   posArr[s*3+1]+=(Math.random()-0.5)*0.02;
-   posArr[s*3+2]+=(Math.random()-0.5)*0.02;
-  }
-  arc.geo.attributes.position.needsUpdate=true;
- }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// REGION CORES
+// REGION CORES (6 cores + 6 auras + 6 labels = 18 objects)
 // ═══════════════════════════════════════════════════════════════════
 
 function buildRegionCores(){
  var coreGeo=new THREE.SphereGeometry(0.35,10,8);
  var auraGeo=new THREE.SphereGeometry(0.7,10,8);
- regionMeshes={};
  
  var names=Object.keys(REGION_POS);
  for(var n=0;n<names.length;n++){
@@ -700,7 +362,6 @@ function buildRegionCores(){
   var core=new THREE.Mesh(coreGeo,coreMat);
   core.position.set(pos.x,pos.y,pos.z);
   scene.add(core);
-  regionMeshes[name]=core;
   
   var auraMat=new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.025,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
   var aura=new THREE.Mesh(auraGeo,auraMat);
@@ -724,7 +385,7 @@ function buildRegionCores(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENT ORBS
+// AGENT ORBS (1 core + 1 glow + 1 label per agent)
 // ═══════════════════════════════════════════════════════════════════
 
 function buildAgentOrbs(){
@@ -755,23 +416,14 @@ function buildAgentOrbs(){
   var labelMat=new THREE.SpriteMaterial({map:tex,transparent:true,opacity:0,blending:THREE.AdditiveBlending});
   var label=new THREE.Sprite(labelMat);
   label.scale.set(0.6,0.08,1);
- scene.add(label);
- 
- // Invisible hitbox for raycaster clicking (much larger than visual)
- // Must stay visible=true for raycaster, but fully transparent
- var hitGeo=new THREE.SphereGeometry(0.4,8,6);
- var hitMat=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.001,depthWrite:false,depthTest:false});
- var hitbox=new THREE.Mesh(hitGeo,hitMat);
- hitbox.renderOrder=999;
- hitbox.userData={type:'agent',name:name};
- scene.add(hitbox);
- 
- agentOrbs[name]={core:core,glow:glow,label:label,hitbox:hitbox,currentPos:new THREE.Vector3(),targetPos:new THREE.Vector3(),visible:false,active:false};
+  scene.add(label);
+  
+  agentOrbs[name]={core:core,glow:glow,label:label,currentPos:new THREE.Vector3(),targetPos:new THREE.Vector3(),visible:false,active:false};
  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PULSE SYSTEM
+// PULSE SYSTEM (pooled, max 5)
 // ═══════════════════════════════════════════════════════════════════
 
 function initPulsePool(){
@@ -786,7 +438,7 @@ function initPulsePool(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// STARFIELD BACKGROUND
+// STARFIELD BACKGROUND (instanced points — 1 draw call)
 // ═══════════════════════════════════════════════════════════════════
 
 var starfieldMesh=null;
@@ -804,38 +456,6 @@ function buildStarfield(){
  var starMat=new THREE.PointsMaterial({color:0x222222,size:0.03,sizeAttenuation:true,transparent:true,opacity:0.5});
  starfieldMesh=new THREE.Points(starGeo,starMat);
  scene.add(starfieldMesh);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// HOLOGRAPHIC GRID FLOOR
-// ═══════════════════════════════════════════════════════════════════
-
-var gridMesh=null;
-
-function buildGridFloor(){
- var gridSize=20;
- var gridDiv=20;
- var geo=new THREE.BufferGeometry();
- var verts=[];
- var step=gridSize/gridDiv;
- var half=gridSize/2;
- // Horizontal lines
- for(var i=0;i<=gridDiv;i++){
-  var z=-half+i*step;
-  verts.push(-half,-2,z, half,-2,z);
- }
- // Vertical lines
- for(var i=0;i<=gridDiv;i++){
-  var x=-half+i*step;
-  verts.push(x,-2,-half, x,-2,half);
- }
- geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
- var mat=new THREE.LineBasicMaterial({
-  color:0x110808,transparent:true,opacity:0.3,
-  blending:THREE.AdditiveBlending,depthWrite:false
- });
- gridMesh=new THREE.LineSegments(geo,mat);
- scene.add(gridMesh);
 }
 
 function spawnPulse(start,end,color,speed){
@@ -867,34 +487,29 @@ function updatePulses(dt){
    continue;
   }
   p.mesh.position.lerpVectors(p.start,p.end,p.t);
-  p.mesh.material.opacity=Math.sin(p.t*Math.PI)*0.8;
+  p.mesh.material.opacity=Math.sin(p.t*Math.PI)*0.7;
  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// NEURAL FIRING — HIGH ELECTRICAL ACTIVITY
+// NEURAL FIRING (instanced color update)
 // ═══════════════════════════════════════════════════════════════════
 
 function fireNeuron(idx){
  if(idx<0||idx>=NEURON_COUNT)return;
  neuronFireTimes[idx]=clock.getElapsedTime();
  
- // Propagate to connected neurons with higher probability
  for(var k=0;k<synapseData.length;k++){
   var s=synapseData[k];
   if(s.i===idx||s.j===idx){
-   if(Math.random()<0.35){ // 35% propagation chance (up from 15%)
+   if(Math.random()<0.15){
     var target=s.i===idx?s.j:s.i;
-    (function(ti,idx2,dist){
+    (function(ti,idx2){
      setTimeout(function(){
       fireNeuron(ti);
-      spawnPulse(neuronPositions[idx2],neuronPositions[ti],0xff0040,5);
-      // Spawn electric arc for close-range firings
-      if(dist<2.0){
-       spawnArc(neuronPositions[idx2],neuronPositions[ti],0xff0040);
-      }
-     },dist*25);
-    })(target,idx,s.dist);
+      spawnPulse(neuronPositions[idx2],neuronPositions[ti],0xff0040,4);
+     },s.dist*40);
+    })(target,idx);
    }
   }
  }
@@ -907,54 +522,35 @@ function animateNeuronsInstanced(time){
   var ft=neuronFireTimes[i];
   var coreColor=isHub?0xff0040:0xff2244;
   
-  // Hub neurons always pulse
   if(isHub){
-   var phase=time*2.0+i*0.5;
-   var pulse=Math.sin(phase)*0.5+0.5;
-   // Blend between base and bright
-   var r=1.0;
-   var g=pulse*0.15;
-   var b=pulse*0.25+0.15;
-   coreColor=null; // signal to use r,g,b directly
+   var phase=time*1.2+i*0.5;
+   // Hub neurons pulse
   }
   
-  // Fire recovery — brighter and longer lasting
+  // Fire recovery
   if(ft>0){
    var elapsed=time-ft;
-   if(elapsed<0.6){ // 0.6s fire duration (up from 0.4)
-    var decay=1-elapsed*1.67;
-    if(coreColor===null){
-     r=1.0;g=0.3*decay+0.15;b=0.4*decay+0.15;
-    }else{
-     coreColor=0xff6080; // brighter flash
-    }
+   if(elapsed<0.4){
+    var decay=1-elapsed*2.5;
+    coreColor=0xff4060;
    }else{
     neuronFireTimes[i]=0;
    }
   }
   
-  if(coreColor!==null){
-   color.setHex(coreColor);
-  }else{
-   color.setRGB(r,g,b);
-  }
+  color.setHex(coreColor);
   neuronInstMesh.setColorAt(i,color);
  }
  neuronInstMesh.instanceColor.needsUpdate=true;
 }
 
 function randomFire(time){
- // Much higher fire rate for visible electrical activity
  if(time>nextFire){
-  // Fire 1-3 neurons per cycle
-  var burstCount=1+Math.floor(Math.random()*2);
-  for(var b=0;b<burstCount;b++){
-   var idx=Math.floor(Math.random()*NEURON_COUNT);
-   if(neuronIsHub[idx]||Math.random()<0.4){ // 40% chance for non-hubs
-    fireNeuron(idx);
-   }
+  var idx=Math.floor(Math.random()*NEURON_COUNT);
+  if(neuronIsHub[idx]||Math.random()<0.2){
+   fireNeuron(idx);
   }
-  nextFire=time+0.15+Math.random()*0.35; // faster interval: 0.15-0.5s (was 0.3-1.1s)
+  nextFire=time+0.3+Math.random()*0.8;
  }
 }
 
@@ -963,7 +559,6 @@ function randomFire(time){
 // ═══════════════════════════════════════════════════════════════════
 
 function updateAgents(dt){
- var time=clock.getElapsedTime();
  var names=Object.keys(agentOrbs);
  for(var n=0;n<names.length;n++){
   var name=names[n];
@@ -974,51 +569,32 @@ function updateAgents(dt){
    var rp=REGION_POS[pos.region]||REGION_POS.semantic;
    orb.targetPos.set(pos.x||rp.x,pos.y||rp.y,pos.z||rp.z);
    
- if(!orb.visible){
- orb.visible=true;
- orb.currentPos.copy(orb.targetPos);
- orb.core.position.copy(orb.currentPos);
- orb.glow.position.copy(orb.currentPos);
- orb.label.position.set(orb.currentPos.x,orb.currentPos.y+0.2,orb.currentPos.z);
- if(orb.hitbox)orb.hitbox.position.copy(orb.currentPos);
- }
+   if(!orb.visible){
+    orb.visible=true;
+    orb.currentPos.copy(orb.targetPos);
+    orb.core.position.copy(orb.currentPos);
+    orb.glow.position.copy(orb.currentPos);
+    orb.label.position.set(orb.currentPos.x,orb.currentPos.y+0.2,orb.currentPos.z);
+   }
    orb.active=true;
   }else{
    orb.active=false;
   }
   
   if(orb.visible){
- orb.currentPos.lerp(orb.targetPos,dt*1.5);
- orb.core.position.copy(orb.currentPos);
- orb.glow.position.copy(orb.currentPos);
- orb.label.position.set(orb.currentPos.x,orb.currentPos.y+0.2,orb.currentPos.z);
- if(orb.hitbox)orb.hitbox.position.copy(orb.currentPos);
+   orb.currentPos.lerp(orb.targetPos,dt*1.5);
+   orb.core.position.copy(orb.currentPos);
+   orb.glow.position.copy(orb.currentPos);
+   orb.label.position.set(orb.currentPos.x,orb.currentPos.y+0.2,orb.currentPos.z);
    
    var tOp=orb.active?0.8:0.1;
    orb.core.material.opacity+=(tOp-orb.core.material.opacity)*dt*2;
    orb.glow.material.opacity+=((orb.active?0.12:0.02)-orb.glow.material.opacity)*dt*2;
    orb.label.material.opacity+=((orb.active?0.4:0.05)-orb.label.material.opacity)*dt*2;
    
-   // Breathing + rotation for active agents
-   var breathe=Math.sin(time*1.5+name.length)*0.01;
-   orb.glow.scale.setScalar(1+breathe);
-   
-   // Active agents emit small electrical pulses to nearby neurons
-   if(orb.active&&Math.random()<0.008){ // occasional auto-fire
-    var closestIdx=-1;
-    var closestDist=999;
-    for(var i=0;i<NEURON_COUNT;i++){
-     var d=orb.currentPos.distanceTo(neuronPositions[i]);
-     if(d<closestDist&&d<2.0){
-      closestDist=d;
-      closestIdx=i;
-     }
-    }
-    if(closestIdx>=0){
-     fireNeuron(closestIdx);
-     spawnArc(orb.currentPos,neuronPositions[closestIdx],AGENT_COLORS[name]||0xff0040);
-    }
-   }
+   // Breathing
+   var b=Math.sin(clock.getElapsedTime()*1.5+name.length)*0.01;
+   orb.glow.scale.setScalar(1+b);
   }
  }
 }
@@ -1032,7 +608,7 @@ function animate(){
  var dt=Math.min(clock.getDelta(),0.1);
  var time=clock.getElapsedTime();
  
- // Camera auto-rotate (slower when dragging)
+ // Camera auto-rotate
  if(!isDragging)camAngle+=dt*0.12;
  cam.position.x=Math.sin(camAngle)*camRadius;
  cam.position.z=Math.cos(camAngle)*camRadius;
@@ -1044,41 +620,23 @@ function animate(){
  randomFire(time);
  updateAgents(dt);
  updatePulses(dt);
- updateArcs(dt);
  
- // Synapse pulse — more visible
+ // Synapse pulse
  var sp=(time*0.3)%1;
- synapseLineSegs.material.opacity=0.08+Math.sin(sp*Math.PI)*0.06;
- 
- // Grid floor subtle pulse
- if(gridMesh){
-  gridMesh.material.opacity=0.2+Math.sin(time*0.5)*0.08;
-  // Grid scan line effect
-  var scanZ=-10+((time*2)%20);
-  gridMesh.position.z=Math.sin(time*0.3)*0.1;
- }
+ synapseLineSegs.material.opacity=0.06+Math.sin(sp*Math.PI)*0.04;
  
  // Slow starfield rotation
  if(starfieldMesh)starfieldMesh.rotation.y=time*0.01;
  
- // Region core breathing
- var rNames=Object.keys(regionMeshes);
- for(var i=0;i<rNames.length;i++){
-  var rm=regionMeshes[rNames[i]];
-  var scale=1+Math.sin(time*0.8+i)*0.05;
-  rm.scale.setScalar(scale);
-  rm.material.opacity=0.1+Math.sin(time*1.2+i*0.7)*0.04;
- }
- 
  ren.render(scene,cam);
  
- // Bloom copy
+ // Bloom: copy main canvas to low-res bloom canvas (CSS blur does the rest)
  if(window._bloomCtx&&window._bloomCv){
   try{
    window._bloomCtx.drawImage(ren.domElement,0,0,window._bloomCv.width,window._bloomCv.height);
   }catch(e){}
  }
-}
+ }
 
 function onResize(){
  cam.aspect=window.innerWidth/window.innerHeight;
@@ -1162,7 +720,7 @@ function updateHUD(){
   html+='<div class="agent-card '+info.status+'" data-agent="'+name+'">';
   html+='<div class="agent-name"><span class="dot '+(info.status==='active'?'on':'off')+'" style="background:'+colorHex+'"></span>'+name+'</div>';
   html+='<div class="agent-meta">'+info.type+(fileStr?' · ':'')+fileStr+' '+actionStr+'</div>';
-  if(pos)html+='<div class="agent-pos">@ '+(REGION_NAMES[pos.region]||pos.region)+' ('+(pos.x||0).toFixed(1)+', '+(pos.y||0).toFixed(1)+', '+(pos.z||0).toFixed(1)+')</div>';
+  if(pos)html+='<div class="agent-pos">@ '+pos.region+' ('+(pos.x||0).toFixed(1)+', '+(pos.y||0).toFixed(1)+', '+(pos.z||0).toFixed(1)+')</div>';
   html+='</div>';
  }
  list.innerHTML=html;
@@ -1172,18 +730,9 @@ function updateHUD(){
  var bKeys=Object.keys(brain);
  for(var i=0;i<bKeys.length;i++){
   var info=brain[bKeys[i]];
-  rHtml+='<div class="region-item" data-region="'+bKeys[i]+'"><span>●</span>'+(REGION_NAMES[bKeys[i]]||info.name)+' — '+info.backend+' — '+info.file_count+' files</div>';
+  rHtml+='<div class="region-item"><span>●</span>'+info.name+' — '+info.backend+' — '+info.file_count+' files</div>';
  }
  rList.innerHTML=rHtml;
- 
- // Region click handlers
- rList.querySelectorAll('.region-item').forEach(function(ri){
-  ri.onclick=function(){
-   var rn=ri.dataset.region;
-   showRegionDetail(rn);
-   focusOnPosition(REGION_POS[rn]);
-  };
- });
  
  var totalFiles=0;
  var bv=Object.values(brain);
@@ -1201,9 +750,9 @@ function updateHUD(){
   var rKeys=Object.keys(brain);
   for(var i=0;i<rKeys.length;i++){
    var info=brain[rKeys[i]];
-   dHtml+='<div class="stat-row"><span class="k"> '+(REGION_NAMES[rKeys[i]]||info.name).toUpperCase()+'</span><span class="v">'+info.backend+' · '+(info.file_count||0)+' files</span></div>';
+   dHtml+='<div class="stat-row"><span class="k">  '+info.name.toUpperCase()+'</span><span class="v">'+info.backend+' · '+(info.file_count||0)+' files</span></div>';
   }
-  dHtml+='<div class="stat-row"><span class="k">SNAPSHOTS</span><span class="v">v5-neural-mvp, v6-instanced</span></div>';
+  dHtml+='<div class="stat-row"><span class="k">SNAPSHOTS</span><span class="v">v5-neural-mvp</span></div>';
   dHtml+='<div class="stat-row"><span class="k">LAST SYNC</span><span class="v">'+new Date().toLocaleTimeString('en',{hour12:false})+'</span></div>';
   driveEl.innerHTML=dHtml;
  }
@@ -1237,15 +786,19 @@ document.querySelectorAll('.tab').forEach(function(tab){
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENT CLICK IN HUD → FOCUS + DETAIL
+// AGENT CLICK → FOCUS
 // ═══════════════════════════════════════════════════════════════════
 
 document.getElementById('agent-list').onclick=function(e){
  var card=e.target.closest('.agent-card');
  if(!card)return;
  var name=card.dataset.agent;
- showAgentDetail(name);
- focusOnAgent(name);
+ var orb=agentOrbs[name];
+ if(orb&&orb.visible){
+  camHeight=orb.currentPos.y+1;
+  camRadius=4;
+  camAngle=Math.atan2(orb.currentPos.x,orb.currentPos.z)+Math.PI*0.3;
+ }
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1254,9 +807,6 @@ document.getElementById('agent-list').onclick=function(e){
 
 async function boot(){
  try{init3D()}catch(e){console.error('init3D err:',e);return}
- 
- // Init electric arcs after scene is ready
- initArcPool();
  
  if(EMBEDDED&&EMBEDDED.agents){
   agents=EMBEDDED.agents;brain=EMBEDDED.brain||{};
