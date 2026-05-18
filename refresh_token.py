@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Refresh Google OAuth token and update rclone config."""
-import json, urllib.request, urllib.parse, configparser
+"""Refresh Google OAuth token and update rclone config.
+Requires env vars: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+"""
+import json, urllib.request, urllib.parse, configparser, os
 
 # Read current token
-with open("/config/.hermes/google_token.json") as f:
+with open(os.path.expanduser("~/.hermes/google_token.json")) as f:
     data = json.load(f)
 
 refresh_token = data.get("refresh_token", "")
-client_id = "REDACTED"
-client_secret = "REDACTED"
+client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 
 if not refresh_token:
     print("NO REFRESH TOKEN FOUND")
-    print("Token keys:", list(data.keys()))
+    exit(1)
+if not client_id or not client_secret:
+    print("Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars")
     exit(1)
 
 # Refresh the access token
@@ -34,7 +38,7 @@ try:
         
         # Update rclone config
         config = configparser.ConfigParser()
-        config.read("/config/.config/rclone/rclone.conf")
+        config.read(os.path.expanduser("~/.config/rclone/rclone.conf"))
         new_token = json.dumps({
             "access_token": new_access,
             "token_type": "Bearer",
@@ -42,14 +46,14 @@ try:
             "expiry": "2099-01-01T00:00:00+00:00"
         })
         config.set("akpanbrain", "token", new_token)
-        with open("/config/.config/rclone/rclone.conf", "w") as f:
+        with open(os.path.expanduser("~/.config/rclone/rclone.conf"), "w") as f:
             config.write(f)
         print("Rclone config updated")
         
         # Also update google_token.json
         data["token"] = new_access
         data["access_token"] = new_access
-        with open("/config/.hermes/google_token.json", "w") as f:
+        with open(os.path.expanduser("~/.hermes/google_token.json"), "w") as f:
             json.dump(data, f)
         print("google_token.json updated")
         

@@ -1,1 +1,19 @@
-.vercel
+# Secrets
+.config/
+*.env
+.env
+credentials.json
+token.json
+rclone.conf
+
+# Cache
+cache/*.txt
+__pycache__/
+*.pyc
+
+# Build artifacts  
+dashboard/index_built.html
+
+# OS
+.DS_Store
+Thumbs.db
