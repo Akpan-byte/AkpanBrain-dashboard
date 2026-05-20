@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>AkpanBrain — Neural Command Center v9</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--red:#FF0000;--dred:#800000;--cyan:#00FFFF;--silver:#C0C0C0;--dsilver:#808080;--bg:#050508;--bg2:#0a0a12;--card:rgba(10,0,0,0.85);--card2:rgba(0,20,30,0.7);--border:rgba(255,0,0,0.2);--border2:rgba(0,255,255,0.15);--glow:rgba(255,0,0,0.15);--glow2:rgba(0,255,255,0.1);--text:#e0e0e0;--dim:#666;--font:'Courier New',monospace}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;width:100vw;height:100vh}
+
+/* Scanline overlay */
+#scanlines{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);animation:scanmove 8s linear infinite}
+@keyframes scanmove{0%{background-position:0 0}100%{background-position:0 100px}}
+
+/* Hex grid overlay */
+#hexgrid{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23ff0000' fill-opacity='1'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+
+/* 3D Canvas */
+#canvas-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none}
+#hud>*{pointer-events:auto}
+
+/* Top bar */
+#topbar{position:absolute;top:0;left:0;right:0;height:44px;background:linear-gradient(180deg,rgba(10,0,0,0.95) 0%,rgba(10,0,0,0.6) 70%,transparent 100%);display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);pointer-events:auto}
+.logo{font-size:16px;font-weight:bold;color:var(--red);text-shadow:0 0 20px var(--glow),0 0 40px rgba(255,0,0,0.08);letter-spacing:3px;white-space:nowrap}
+.logo .sub{font-size:9px;color:var(--cyan);letter-spacing:1px;vertical-align:super;text-shadow:0 0 10px var(--glow2)}
+.stat{font-size:10px;color:var(--silver);padding:3px 8px;border:1px solid var(--border);border-radius:3px;background:var(--card);white-space:nowrap}
+.stat b{color:var(--red);font-size:12px}
+.stat.cyan b{color:var(--cyan)}
+#ws-status{width:8px;height:8px;border-radius:50%;background:#333;margin-left:auto;flex-shrink:0}
+#ws-status.connected{background:#4ade80;box-shadow:0 0 8px #4ade80}
+#ws-status.error{background:#f87171;box-shadow:0 0 8px #f87171;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+#btn-scan{padding:3px 10px;border:1px solid var(--border2);border-radius:3px;background:transparent;color:var(--cyan);font-size:9px;font-family:var(--font);cursor:pointer;letter-spacing:1px;transition:all .2s}
+#btn-scan:hover{background:rgba(0,255,255,0.1);box-shadow:0 0 12px var(--glow2)}
+
+/* Agent grid */
+#agent-panel{position:absolute;top:52px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:4px;max-height:120px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--dred) transparent}
+.agent-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--border);border-radius:10px;background:var(--card);font-size:9px;cursor:pointer;transition:all .3s;white-space:nowrap}
+.agent-chip:hover{border-color:var(--cyan);box-shadow:0 0 10px var(--glow2)}
+.agent-chip.active{border-color:rgba(0,255,255,0.3);background:rgba(0,20,30,0.5)}
+.agent-chip.inactive{opacity:0.35}
+.agent-chip .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.agent-chip .dot.on{box-shadow:0 0 6px currentColor;animation:pulse 2s infinite}
+.agent-chip .dot.off{background:#333}
+.agent-chip .aname{color:var(--silver)}
+.agent-chip .atype{color:var(--dim);font-size:8px;margin-left:2px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Main layout */
+#main{position:absolute;top:175px;left:10px;right:10px;bottom:10px;display:flex;gap:10px;overflow:hidden}
+
+/* Left panel - sessions */
+#left-panel{width:300px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--dred) transparent;flex-shrink:0}
+@media(max-width:900px){#left-panel{display:none}}
+.panel-hdr{font-size:10px;color:var(--red);letter-spacing:2px;text-transform:uppercase;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.panel-hdr::before{content:'▸';color:var(--cyan)}
+.session{padding:6px 8px;margin-bottom:3px;border:1px solid transparent;border-radius:3px;background:var(--card);cursor:pointer;transition:all .2s;font-size:10px}
+.session:hover{border-color:var(--red);background:rgba(255,0,0,0.05)}
+.session .stitle{color:var(--silver);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session .smeta{color:var(--dim);font-size:8px;margin-top:2px}
+.session .smodel{color:var(--cyan);font-size:8px;padding:1px 4px;border:1px solid var(--border2);border-radius:2px;display:inline-block;margin-top:2px}
+.session.active-s{border-left:2px solid var(--red)}
+.subagent{margin-left:12px;border-left:1px solid rgba(255,0,0,0.1);padding-left:8px}
+
+/* Right panel - brain + system */
+#right-panel{width:260px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--dred) transparent;flex-shrink:0}
+@media(max-width:700px){#right-panel{display:none}}
+.brain-region{padding:6px 8px;margin-bottom:4px;border:1px solid var(--border);border-radius:3px;background:var(--card);transition:all .2s}
+.brain-region:hover{border-color:var(--cyan);box-shadow:0 0 8px var(--glow2)}
+.brain-region .rname{font-size:10px;color:var(--silver);margin-bottom:2px;display:flex;align-items:center;gap:4px}
+.brain-region .rname .rdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.brain-region .rname .rdot.ok{background:#4ade80;box-shadow:0 0 4px #4ade80}
+.brain-region .rname .rdot.err{background:#f87171}
+.brain-region .rmetric{font-size:9px;color:var(--dim);margin-top:2px}
+.brain-region .rmetric b{color:var(--red)}
+
+/* System panel */
+#sys-panel{margin-top:8px}
+.sys-row{padding:4px 8px;margin-bottom:3px;background:var(--card);border:1px solid var(--border);border-radius:3px}
+.sys-row .slabel{font-size:9px;color:var(--dim)}
+.sys-row .sval{font-size:11px;color:var(--silver)}
+.sys-row .sbar{height:3px;background:#111;border-radius:2px;margin-top:3px;overflow:hidden}
+.sys-row .sbar .sfill{height:100%;border-radius:2px;transition:width .5s}
+.sfill.cpu{background:linear-gradient(90deg,#4ade80,#fbbf24,#f87171)}
+.sfill.mem{background:linear-gradient(90deg,var(--cyan),#818cf8)}
+.sfill.disk{background:linear-gradient(90deg,var(--red),#dc2626)}
+
+/* Center - 3D info overlay */
+#center-info{flex:1;position:relative;overflow:hidden}
+#event-log{position:absolute;bottom:8px;left:8px;right:8px;max-height:120px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--dred) transparent;background:rgba(5,5,8,0.8);border:1px solid var(--border);border-radius:4px;padding:6px}
+#event-log .ev{font-size:9px;color:var(--dim);padding:1px 0;border-bottom:1px solid rgba(255,0,0,0.05)}
+#event-log .ev b{color:var(--red)}
+
+/* Data rain canvas */
+#data-rain{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0.06}
+</style>
+</head>
+<body>
+<div id="scanlines"></div>
+<div id="hexgrid"></div>
+<canvas id="data-rain"></canvas>
+<div id="canvas-container"></div>
+<div id="hud">
+ <div id="topbar">
+  <span class="logo">AKPAN<span style="color:var(--cyan)">BRAIN</span> <span class="sub">v9</span></span>
+  <span class="stat">Agents <b id="stat-agents">0</b></span>
+  <span class="stat cyan">Active <b id="stat-active">0</b></span>
+  <span class="stat">Sessions <b id="stat-sessions">0</b></span>
+  <span class="stat">Vectors <b id="stat-vectors">0</b></span>
+  <span class="stat cyan">Events <b id="stat-events">0</b></span>
+  <button id="btn-scan">⟳ SCAN</button>
+  <div id="ws-status" title="WebSocket"></div>
+ </div>
+ <div id="agent-panel"></div>
+ <div id="main">
+  <div id="left-panel">
+   <div class="panel-hdr">Sessions</div>
+   <div id="sessions-list"></div>
+  </div>
+  <div id="center-info">
+   <div id="event-log"></div>
+  </div>
+  <div id="right-panel">
+   <div class="panel-hdr">Brain Regions</div>
+   <div id="brain-panel"></div>
+   <div class="panel-hdr" style="margin-top:8px">System</div>
+   <div id="sys-panel"></div>
+  </div>
+ </div>
+</div>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════
+// DATA RAIN EFFECT
+// ═══════════════════════════════════════
+(function(){
+ var c=document.getElementById('data-rain'),ctx=c.getContext('2d');
+ var cols=Math.floor(window.innerWidth/14),drops=[];
+ for(var i=0;i<cols;i++)drops[i]=Math.random()*-100;
+ function resize(){c.width=window.innerWidth;c.height=window.innerHeight;cols=Math.floor(c.width/14)}
+ resize();window.addEventListener('resize',resize);
+ function draw(){
+  ctx.fillStyle='rgba(5,5,8,0.15)';ctx.fillRect(0,0,c.width,c.height);
+  ctx.font='12px monospace';ctx.fillStyle='#FF0000';
+  for(var i=0;i<cols;i++){
+   var ch=String.fromCharCode(0x30A0+Math.random()*96);
+   ctx.fillText(ch,i*14,drops[i]*14);
+   if(drops[i]*14>c.height&&Math.random()>0.975)drops[i]=0;
+   drops[i]+=0.5;
+  }
+  requestAnimationFrame(draw);
+ }
+ draw();
+})();
+
+// ═══════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════
+var scene,camera,renderer,brainCore,agentOrbs={},particles;
+function init3D(){
+ scene=new THREE.Scene();
+ scene.fog=new THREE.FogExp2(0x050508,0.08);
+ camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100);
+ camera.position.set(0,3,8);
+ camera.lookAt(0,0,0);
+ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+ renderer.setSize(window.innerWidth,window.innerHeight);
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+ renderer.setClearColor(0x050508,1);
+ document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+ // Brain core - icosahedron
+ var icoGeo=new THREE.IcosahedronGeometry(1.2,2);
+ var icoMat=new THREE.MeshBasicMaterial({color:0xFF0000,wireframe:true,transparent:true,opacity:0.3});
+ brainCore=new THREE.Mesh(icoGeo,icoMat);
+ scene.add(brainCore);
+
+ // Inner glow
+ var glowGeo=new THREE.SphereGeometry(0.8,16,16);
+ var glowMat=new THREE.MeshBasicMaterial({color:0xFF0000,transparent:true,opacity:0.05});
+ var glow=new THREE.Mesh(glowGeo,glowMat);
+ scene.add(glow);
+
+ // Particles
+ var pGeo=new THREE.BufferGeometry();
+ var pCount=500;
+ var pPos=new Float32Array(pCount*3);
+ for(var i=0;i<pCount*3;i++)pPos[i]=(Math.random()-0.5)*20;
+ pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+ var pMat=new THREE.PointsMaterial({color:0xFF0000,size:0.03,transparent:true,opacity:0.4});
+ particles=new THREE.Points(pGeo,pMat);
+ scene.add(particles);
+
+ // Ring
+ var ringGeo=new THREE.TorusGeometry(3,0.01,8,64);
+ var ringMat=new THREE.MeshBasicMaterial({color:0x00FFFF,transparent:true,opacity:0.15});
+ var ring=new THREE.Mesh(ringGeo,ringMat);
+ ring.rotation.x=Math.PI/2;
+ scene.add(ring);
+
+ window.addEventListener('resize',function(){
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+ });
+}
+
+function createAgentOrb(name,color,isActive){
+ var group=new THREE.Group();
+ var sphereGeo=new THREE.SphereGeometry(0.15,8,8);
+ var sphereMat=new THREE.MeshBasicMaterial({color:new THREE.Color(color),transparent:true,opacity:isActive?0.8:0.2});
+ var sphere=new THREE.Mesh(sphereGeo,sphereMat);
+ group.add(sphere);
+
+ if(isActive){
+  var ringGeo=new THREE.RingGeometry(0.2,0.25,16);
+  var ringMat=new THREE.MeshBasicMaterial({color:new THREE.Color(color),transparent:true,opacity:0.3,side:THREE.DoubleSide});
+  var orbRing=new THREE.Mesh(ringGeo,ringMat);
+  orbRing.lookAt(camera.position);
+  group.add(orbRing);
+ }
+
+ // Light beam to brain
+ var lineGeo=new THREE.BufferGeometry();
+ var lineMat=new THREE.LineBasicMaterial({color:new THREE.Color(color),transparent:true,opacity:isActive?0.15:0.02});
+ var line=new THREE.Line(lineGeo,lineMat);
+ group.userData={line:line,isActive:isActive};
+ scene.add(line);
+
+ scene.add(group);
+ return group;
+}
+
+function positionAgents(agents){
+ var keys=Object.keys(agents);
+ var active=keys.filter(function(k){return agents[k].running});
+ var inactive=keys.filter(function(k){return !agents[k].running});
+
+ // Remove old orbs
+ for(var name in agentOrbs){
+  if(!agents[name]){
+   scene.remove(agentOrbs[name]);
+   if(agentOrbs[name].userData.line)scene.remove(agentOrbs[name].userData.line);
+   delete agentOrbs[name];
+  }
+ }
+
+ var idx=0;
+ active.forEach(function(name){
+  if(!agentOrbs[name]){
+   agentOrbs[name]=createAgentOrb(name,agents[name].color||'#FF0000',true);
+  }
+  var angle=(idx/active.length)*Math.PI*2;
+  var r=3+Math.sin(idx*1.5)*0.3;
+  agentOrbs[name].position.set(Math.cos(angle)*r,Math.sin(angle*2)*0.5,Math.sin(angle)*r);
+  // Update beam
+  if(agentOrbs[name].userData.line){
+   var pts=[agentOrbs[name].position.clone(),new THREE.Vector3(0,0,0)];
+   agentOrbs[name].userData.line.geometry.setFromPoints(pts);
+   agentOrbs[name].userData.line.geometry.attributes.position.needsUpdate=true;
+  }
+  idx++;
+ });
+
+ inactive.forEach(function(name){
+  if(!agentOrbs[name]){
+   agentOrbs[name]=createAgentOrb(name,agents[name].color||'#333',false);
+  }
+  var angle=(idx/keys.length)*Math.PI*2;
+  var r=5+Math.random()*1;
+  agentOrbs[name].position.set(Math.cos(angle)*r,Math.sin(angle*3)*0.3+Math.random()*0.5,Math.sin(angle)*r);
+  idx++;
+ });
+}
+
+var animTime=0;
+function animate(){
+ requestAnimationFrame(animate);
+ animTime+=0.005;
+
+ if(brainCore){
+  brainCore.rotation.y+=0.002;
+  brainCore.rotation.x=Math.sin(animTime)*0.1;
+  brainCore.scale.setScalar(1+Math.sin(animTime*2)*0.03);
+ }
+
+ if(particles){
+  particles.rotation.y+=0.0005;
+ }
+
+ // Float agent orbs
+ for(var name in agentOrbs){
+  var orb=agentOrbs[name];
+  if(orb.userData.isActive){
+   orb.position.y+=Math.sin(animTime*3+orb.position.x)*0.001;
+   if(orb.children[1])orb.children[1].lookAt(camera.position);
+  }
+ }
+
+ if(camera){
+  camera.position.x=Math.sin(animTime*0.2)*0.5;
+  camera.position.y=3+Math.sin(animTime*0.3)*0.3;
+  camera.lookAt(0,0,0);
+ }
+
+ if(renderer)renderer.render(scene,camera);
+}
+
+// ═══════════════════════════════════════
+// WEBSOCKET
+// ═══════════════════════════════════════
+var ws=null,reconnectTimer=null,eventCount=0;
+var snapshotData={agents:{},sessions:[],brainRegions:[],system:{}};
+
+function connectWS(){
+ var url='ws://'+location.hostname+':8199/ws';
+ try{
+  ws=new WebSocket(url);
+  ws.onopen=function(){
+   document.getElementById('ws-status').className='connected';
+   document.getElementById('ws-status').title='WS Connected';
+  };
+ ws.onmessage=function(e){
+ try{
+ var d=JSON.parse(e.data);
+ if(d.type==='snapshot'){
+ // Normalize agents to object
+ if(Array.isArray(d.agents)){
+ var obj={};
+ d.agents.forEach(function(a){obj[a.name]=a});
+ d.agents=obj;
+ }
+ // Map server field names to dashboard expectations
+ d.sessions=d.activeSessions||d.sessions||[];
+ d.brainRegions=mapBrainRegions(d.brain||{});
+ d.system=d.metrics||d.system||{};
+ // Count events from recentEvents
+ if(d.recentEvents){
+  eventCount+=d.recentEvents.length;
+  renderEvents(d.recentEvents);
+ }
+ snapshotData=d;
+ renderAll();
+ }else if(d.type==='events'||d.type==='recentEvents'){
+ var evts=d.events||d.recentEvents||d.data||[];
+ eventCount+=evts.length;
+ renderEvents(evts);
+ }else if(d.type==='brainStatus'){
+ snapshotData.brainRegions=mapBrainRegions(d.data||{});
+ renderBrain();
+ }else if(d.type==='systemMetrics'){
+ snapshotData.system=d.data||{};
+ renderSystem();
+ }
+ }catch(err){console.error('WS parse error',err)}
+ };
+  ws.onclose=function(){
+   document.getElementById('ws-status').className='error';
+   document.getElementById('ws-status').title='WS Disconnected';
+   clearTimeout(reconnectTimer);
+   reconnectTimer=setTimeout(connectWS,3000);
+  };
+  ws.onerror=function(){ws.close()};
+ }catch(e){
+  document.getElementById('ws-status').className='error';
+  reconnectTimer=setTimeout(connectWS,5000);
+ }
+}
+
+// ═══════════════════════════════════════
+// BRAIN DATA MAPPER
+// ═══════════════════════════════════════
+function mapBrainRegions(brain){
+ // Server sends: semanticCortex, knowledgeGraph, episodicMemory, workingMemory, driveSync
+ var regions=[];
+ var sc=brain.semanticCortex||{};
+ regions.push({name:'Semantic Cortex',status:sc.status||'unknown',backend:'FAISS',vectors:sc.vectorCount||0});
+ var kg=brain.knowledgeGraph||{};
+ regions.push({name:'Knowledge Graph',status:kg.status||'unknown',backend:'NetworkX',nodes:kg.nodes||0,edges:kg.edges||0});
+ var em=brain.episodicMemory||{};
+ regions.push({name:'Memory Hippocampus',status:em.status||'unknown',backend:'SQLite',episodes:em.episodes||0});
+ var wm=brain.workingMemory||{};
+ regions.push({name:'Working Memory',status:wm.status||'unknown',backend:'Redis',keys:wm.keys||0});
+ var ds=brain.driveSync||{};
+ regions.push({name:'Drive Sync',status:ds.status||'unknown',backend:'Google Drive',files:ds.files||0,totalSize:ds.totalSize||0});
+ return regions;
+}
+
+// ═══════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════
+function renderAll(){
+ renderAgents();
+ renderSessions();
+ renderBrain();
+ renderSystem();
+ positionAgents(snapshotData.agents||{});
+
+ // Topbar stats
+ var agents=snapshotData.agents||{};
+ var agentArr=Object.values(agents);
+ document.getElementById('stat-agents').textContent=agentArr.length||0;
+ document.getElementById('stat-active').textContent=agentArr.filter(function(a){return a.running}).length||0;
+ document.getElementById('stat-sessions').textContent=(snapshotData.activeSessions||snapshotData.sessions||[]).length||0;
+ var sc=(snapshotData.brain||{}).semanticCortex||{};
+ document.getElementById('stat-vectors').textContent=sc.vectorCount||0;
+ document.getElementById('stat-events').textContent=eventCount;
+}
+
+function renderAgents(){
+ var agents=snapshotData.agents||{};
+ var el=document.getElementById('agent-panel');
+ var html='';
+ // Sort: active first, then inactive, then not-found
+ var sorted=Object.values(agents).sort(function(a,b){
+  var sa=a.running?0:(a.installed?1:2);
+  var sb=b.running?0:(b.installed?1:2);
+  return sa-sb;
+ });
+ sorted.forEach(function(a){
+  var cls=a.running?'active':(a.installed?'inactive':'inactive');
+  var dotCls=a.running?'on':'off';
+  var dotColor=a.running?(a.color||'#4ade80'):'#333';
+  html+='<div class="agent-chip '+cls+'" title="'+(a.path||'not found')+'">';
+  html+='<span class="dot '+dotCls+'" style="color:'+dotColor+';background:'+dotColor+'"></span>';
+  html+='<span class="aname">'+a.icon+' '+a.name+'</span>';
+  html+='<span class="atype">'+a.type+'</span>';
+  html+='</div>';
+ });
+ if(!html)html='<div style="font-size:9px;color:var(--dim);padding:4px">Scanning agents...</div>';
+ el.innerHTML=html;
+}
+
+function renderSessions(){
+ var sessions=snapshotData.activeSessions||snapshotData.sessions||[];
+ var tree=snapshotData.sessionTree||{};
+ var el=document.getElementById('sessions-list');
+ var html='';
+ sessions.slice(0,20).forEach(function(s){
+  var cls=s.is_active||s.isActive?'active-s':'';
+  html+='<div class="session '+cls+'">';
+  html+='<div class="stitle">'+(s.title||s.session_id||s.id||'Session')+'</div>';
+  html+='<div class="smeta">'+(s.model||'')+' • '+(s.message_count||s.messageCount||0)+' msgs • $'+(s.total_cost||s.totalCost||0).toFixed(2)+'</div>';
+  if(s.model)html+='<span class="smodel">'+s.model.split('/').pop()+'</span>';
+  // Children from sessionTree
+  var treeData=tree[s.session_id||s.id];
+  if(treeData&&treeData.children&&treeData.children.length){
+   treeData.children.forEach(function(sub){
+    html+='<div class="subagent">';
+    html+='<div class="stitle" style="font-size:9px">↳ '+(sub.model||'sub')+'</div>';
+    html+='<div class="smeta">$'+(sub.cost||0).toFixed(2)+' • '+(sub.tool_calls||sub.toolCalls||0)+' tools</div>';
+    html+='</div>';
+   });
+  }
+  html+='</div>';
+ });
+ if(!html)html='<div style="font-size:9px;color:var(--dim);padding:4px">No active sessions</div>';
+ el.innerHTML=html;
+}
+
+function renderBrain(){
+ var regions=snapshotData.brainRegions||[];
+ var el=document.getElementById('brain-panel');
+ // Default regions if no data
+ if(!regions.length){
+ regions=[
+ {name:'Semantic Cortex',status:'active',backend:'FAISS',vectors:0},
+ {name:'Knowledge Graph',status:'active',backend:'NetworkX',nodes:0,edges:0},
+ {name:'Memory Hippocampus',status:'active',backend:'SQLite',episodes:0},
+ {name:'Working Memory',status:'active',backend:'Redis',keys:0},
+ {name:'Drive Sync',status:'unknown',backend:'Google Drive',files:0},
+ ];
+ }
+ var html='';
+ regions.forEach(function(r){
+ var dotCls=(r.status==='active'||r.status==='connected')?'ok':'err';
+ var metric='';
+ if(r.vectors!==undefined)metric='Vectors: <b>'+r.vectors+'</b>';
+ else if(r.nodes!==undefined)metric='Nodes: <b>'+r.nodes+'</b> Edges: <b>'+r.edges+'</b>';
+ else if(r.episodes!==undefined)metric='Episodes: <b>'+r.episodes+'</b>';
+ else if(r.keys!==undefined)metric='Keys: <b>'+r.keys+'</b>';
+ else if(r.files!==undefined)metric='Files: <b>'+r.files+'</b>';
+ html+='<div class="brain-region">';
+ html+='<div class="rname"><span class="rdot '+dotCls+'"></span>'+r.name+' <span style="color:var(--dim);font-size:8px">('+r.backend+')</span></div>';
+ if(metric)html+='<div class="rmetric">'+metric+'</div>';
+ html+='</div>';
+ });
+ el.innerHTML=html;
+}
+
+function renderSystem(){
+ var sys=snapshotData.metrics||snapshotData.system||{};
+ var el=document.getElementById('sys-panel');
+ var cpu=sys.cpu||0;
+ var mem=sys.memPercent||0;
+ var disk=sys.diskPercent||0;
+ var html='';
+ html+='<div class="sys-row"><div class="slabel">CPU</div><div class="sval">'+cpu.toFixed(1)+'%</div><div class="sbar"><div class="sfill cpu" style="width:'+Math.min(cpu,100)+'%"></div></div></div>';
+ html+='<div class="sys-row"><div class="slabel">RAM</div><div class="sval">'+mem.toFixed(1)+'% ('+formatBytes(sys.memUsed||0)+' / '+formatBytes(sys.memTotal||0)+')</div><div class="sbar"><div class="sfill mem" style="width:'+Math.min(mem,100)+'%"></div></div></div>';
+ html+='<div class="sys-row"><div class="slabel">DISK</div><div class="sval">'+disk.toFixed(1)+'% ('+formatBytes(sys.diskUsed||0)+' / '+formatBytes(sys.diskTotal||0)+')</div><div class="sbar"><div class="sfill disk" style="width:'+Math.min(disk,100)+'%"></div></div></div>';
+ html+='<div class="sys-row"><div class="slabel">NET ↑↓</div><div class="sval">'+formatBytes(sys.netBytesSent||0)+' / '+formatBytes(sys.netBytesRecv||0)+'</div></div>';
+ // Agent processes
+ if(sys.agentProcesses){
+  var procs=sys.agentProcesses;
+  html+='<div class="sys-row" style="margin-top:4px"><div class="slabel">AGENT PROCESSES</div>';
+  for(var name in procs){
+   var plist=procs[name];
+   html+='<div style="font-size:8px;color:var(--silver);margin-top:2px">'+name+': '+plist.length+' proc';
+   if(plist[0])html+=' ('+plist[0].cpu.toFixed(1)+'% CPU, '+plist[0].mem.toFixed(1)+'% MEM)';
+   html+='</div>';
+  }
+  html+='</div>';
+ }
+ el.innerHTML=html;
+}
+
+function renderEvents(events){
+ var el=document.getElementById('event-log');
+ var html=el.innerHTML;
+ events.slice(-10).forEach(function(ev){
+  html+='<div class="ev"><b>▸</b> '+(ev.role||'')+': '+((ev.content||'').substring(0,80))+'</div>';
+ });
+ // Keep last 20
+ var lines=html.split('</div>');
+ if(lines.length>20)lines=lines.slice(-20);
+ el.innerHTML=lines.join('</div>');
+ el.scrollTop=el.scrollHeight;
+}
+
+function formatBytes(b){
+ if(!b)return '0B';
+ var u=['B','KB','MB','GB','TB'];
+ var i=0;
+ while(b>=1024&&i<u.length-1){b/=1024;i++}
+ return b.toFixed(i?1:0)+u[i];
+}
+
+// ═══════════════════════════════════════
+// DEMO DATA (fallback when WS unavailable)
+// ═══════════════════════════════════════
+function loadDemoData(){
+ snapshotData={
+ agents:[
+ {name:'hermes',type:'orchestrator',color:'#4FC3F7',icon:'🧠',installed:true,running:true,path:'/config/.local/bin/hermes'},
+ {name:'claude',type:'coder',color:'#F59E0B',icon:'🟡',installed:true,running:false,path:'node'},
+ {name:'gemini',type:'coder',color:'#34D399',icon:'🟢',installed:true,running:true,path:'node'},
+ {name:'kilo',type:'coder',color:'#A78BFA',icon:'🟣',installed:true,running:false,path:'node'},
+ {name:'kimi',type:'coder',color:'#FB923C',icon:'🟠',installed:true,running:false,path:'/config/.local/bin/kimi'},
+ {name:'codex',type:'coder',color:'#38BDF8',icon:'🔵',installed:true,running:false,path:'node'},
+ {name:'opencode',type:'coder',color:'#2DD4BF',icon:'🌊',installed:true,running:false,path:'node'},
+ {name:'qwen',type:'coder',color:'#F472B6',icon:'🩷',installed:true,running:false,path:'node'},
+ {name:'roo',type:'coder',color:'#EF4444',icon:'🔴',installed:true,running:false,path:'/config/.local/bin/roo'},
+ {name:'nullclaw',type:'router',color:'#8B5CF6',icon:'🔮',installed:true,running:false,path:'/config/.local/bin/nullclaw'},
+ {name:'gptme',type:'coder',color:'#06B6D4',icon:'💎',installed:true,running:false,path:'/config/.local/bin/gptme'},
+ {name:'jcode',type:'coder',color:'#10B981',icon:'✅',installed:true,running:true,path:'/config/.local/bin/jcode'},
+ {name:'codebuff',type:'coder',color:'#FBBF24',icon:'⚡',installed:true,running:true,path:'node'},
+ {name:'goose',type:'coder',color:'#F97316',icon:'🦆',installed:true,running:false,path:'/config/.local/bin/goose'},
+ {name:'codel',type:'coder',color:'#A3E635',icon:'💻',installed:false,running:false,path:''},
+ ],
+ activeSessions:[
+ {session_id:'s1',title:'AkpanBrain Build',model:'z-ai/glm-5.1',is_active:true,message_count:142,total_cost:1.23},
+ ],
+ sessionTree:{},
+ brain:{
+ semanticCortex:{status:'active',vectorCount:2},
+ knowledgeGraph:{status:'active',nodes:104,edges:52},
+ episodicMemory:{status:'active',episodes:262},
+ workingMemory:{status:'active',keys:0},
+ driveSync:{status:'connected',files:3,totalSize:50000},
+ },
+ metrics:{cpu:14.1,memTotal:25139523584,memUsed:8737435648,memPercent:34.8,diskTotal:56084717568,diskUsed:54816456704,diskPercent:97.8,netBytesSent:31394930389,netBytesRecv:28145419171,agentProcesses:{}},
+ recentEvents:[],
+ };
+ // Normalize demo agents to object
+ var obj={};
+ snapshotData.agents.forEach(function(a){obj[a.name]=a});
+ snapshotData.agents=obj;
+ snapshotData.brainRegions=mapBrainRegions(snapshotData.brain);
+ snapshotData.system=snapshotData.metrics;
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+init3D();
+loadDemoData();
+renderAll();
+animate();
+connectWS();
+
+// SCAN button
+document.getElementById('btn-scan').addEventListener('click',function(){
+ if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'scan'}));
+ else{loadDemoData();renderAll();}
+});
+
+// Fallback: if WS doesn't connect in 5s, show demo
+setTimeout(function(){
+ if(!ws||ws.readyState!==1)loadDemoData();renderAll();
+},5000);
+</script>
+</body>
+</html>

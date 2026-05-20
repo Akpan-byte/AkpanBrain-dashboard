@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>AkpanBrain — Neural Dashboard v8</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--red:#FF0000;--dred:#800000;--silver:#C0C0C0;--dsilver:#808080;--bg:#050508;--card:rgba(10,0,0,0.85);--border:rgba(255,0,0,0.2);--glow:rgba(255,0,0,0.15);--text:#e0e0e0;--dim:#666}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden;width:100vw;height:100vh}
+#canvas-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#hud{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none}
+#hud>*{pointer-events:auto}
+
+/* Top bar */
+#topbar{position:absolute;top:0;left:0;right:0;height:48px;background:linear-gradient(180deg,rgba(10,0,0,0.95),transparent);display:flex;align-items:center;padding:0 20px;gap:16px;border-bottom:1px solid var(--border)}
+#topbar .logo{font-size:18px;font-weight:bold;color:var(--red);text-shadow:0 0 20px var(--glow);letter-spacing:2px}
+#topbar .stat{font-size:11px;color:var(--silver);padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+#topbar .stat b{color:var(--red);font-size:13px}
+
+/* Agent chips */
+#agent-bar{position:absolute;top:56px;left:12px;display:flex;flex-wrap:wrap;gap:6px;max-width:420px}
+.agent-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card);font-size:10px;cursor:pointer;transition:all .2s}
+.agent-chip:hover{border-color:var(--red);box-shadow:0 0 12px var(--glow)}
+.agent-chip .dot{width:8px;height:8px;border-radius:50%}
+.agent-chip .dot.active{box-shadow:0 0 8px currentColor;animation:pulse 2s infinite}
+.agent-chip .dot.inactive{opacity:0.3}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* Left panel — sessions */
+#left-panel{position:absolute;top:56px;left:12px;width:320px;bottom:12px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--dred) transparent}
+#left-panel.hidden{display:none}
+.panel-title{font-size:12px;color:var(--red);letter-spacing:2px;text-transform:uppercase;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px}
+.session-item{padding:8px 10px;margin-bottom:4px;border:1px solid transparent;border-radius:4px;background:var(--card);cursor:pointer;transition:all .2s;font-size:11px}
+.session-item:hover{border-color:var(--red);background:rgba(255,0,0,0.08)}
+.session-item .title{color:var(--silver);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-item .meta{color:var(--dim);font-size:9px;margin-top:3px}
+.session-item .model-tag{color:var(--red);font-size:9px;padding:1px 6px;border:1px solid var(--border);border-radius:3px;display:inline-block;margin-top:3px}
+.session-item.active-session{border-left:2px solid var(--red)}
+.subagent-indent{margin-left:16px;border-left:1px solid rgba(255,0,0,0.15)}
+
+/* Right panel — brain + metrics */
+#right-panel{position:absolute;top:56px;right:12px;width:280px;bottom:12px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--dred) transparent}
+.brain-region{padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.brain-region .region-name{font-size:11px;color:var(--silver);margin-bottom:4px}
+.brain-region .region-status{font-size:9px}
+.brain-region .region-status.active{color:#4ade80}
+.brain-region .region-status.error{color:#f87171}
+.brain-region .region-metric{font-size:10px;color:var(--dim);margin-top:3px}
+.brain-region .region-metric b{color:var(--red)}
+
+.metric-card{padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);border-radius:4px;background:var(--card)}
+.metric-card .label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.metric-card .value{font-size:18px;color:var(--silver);font-weight:bold}
+.metric-card .value.warn{color:#fbbf24}
+.metric-card .value.crit{color:var(--red)}
+.metric-bar{height:3px;background:rgba(255,0,0,0.15);border-radius:2px;margin-top:4px}
+.metric-bar .fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* Bottom panel — event stream */
+#event-stream{position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(0deg,rgba(10,0,0,0.95),transparent);border-top:1px solid var(--border);overflow-y:auto;padding:8px 16px;scrollbar-width:thin;scrollbar-color:var(--dred) transparent}
+.event-line{font-size:10px;color:var(--dim);padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-line .ts{color:var(--dred);margin-right:8px}
+.event-line .role{color:var(--silver);margin-right:6px;font-weight:bold}
+.event-line .tool{color:#fbbf24}
+
+/* Session detail modal */
+#detail-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;max-height:80vh;overflow-y:auto;background:rgba(5,5,8,0.98);border:1px solid var(--red);border-radius:8px;padding:20px;z-index:100;display:none;scrollbar-width:thin;scrollbar-color:var(--dred) transparent}
+#detail-modal.visible{display:block}
+#detail-modal .modal-title{font-size:14px;color:var(--red);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+#detail-modal .modal-close{position:absolute;top:12px;right:16px;cursor:pointer;color:var(--dim);font-size:18px}
+#detail-modal .modal-close:hover{color:var(--red)}
+#detail-modal .msg-block{padding:6px 8px;margin-bottom:4px;border-left:2px solid var(--border);font-size:10px;background:var(--card)}
+#detail-modal .msg-block.user{border-color:#60a5fa}
+#detail-modal .msg-block.assistant{border-color:var(--red)}
+#detail-modal .msg-block.tool{border-color:#fbbf24}
+#detail-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99;display:none}
+#detail-overlay.visible{display:block}
+
+/* 3D controls */
+#view-controls{position:absolute;bottom:130px;right:12px;display:flex;gap:6px}
+#view-controls button{padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--silver);font-size:10px;cursor:pointer;font-family:inherit}
+#view-controls button:hover{border-color:var(--red);color:var(--red)}
+#view-controls button.active{border-color:var(--red);color:var(--red);background:rgba(255,0,0,0.1)}
+
+/* Responsive */
+@media(max-width:768px){
+#left-panel{width:100%;bottom:130px;display:none}
+#right-panel{width:100%;bottom:130px;display:none}
+#agent-bar{max-width:100%}
+}
+</style>
+</head>
+<body>
+<div id="canvas-container"></div>
+
+<div id="hud">
+  <div id="topbar">
+    <span class="logo">◈ AKPANBRAIN</span>
+    <span class="stat">Sessions <b id="stat-sessions">0</b></span>
+    <span class="stat">Active <b id="stat-active">0</b></span>
+    <span class="stat">Subagents <b id="stat-subagents">0</b></span>
+    <span class="stat">Tokens <b id="stat-tokens">0</b></span>
+    <span class="stat">Messages <b id="stat-messages">0</b></span>
+    <span class="stat">CPU <b id="stat-cpu">0%</b></span>
+    <span class="stat">RAM <b id="stat-ram">0%</b></span>
+    <span class="stat">Disk <b id="stat-disk">0%</b></span>
+  </div>
+
+  <div id="agent-bar"></div>
+
+  <div id="left-panel">
+    <div class="panel-title">◈ Active Sessions</div>
+    <div id="session-list"></div>
+  </div>
+
+  <div id="right-panel">
+    <div class="panel-title">◈ Brain Regions</div>
+    <div id="brain-regions"></div>
+    <div class="panel-title" style="margin-top:12px">◈ System</div>
+    <div id="system-metrics"></div>
+    <div class="panel-title" style="margin-top:12px">◈ Model Stats</div>
+    <div id="model-stats"></div>
+  </div>
+
+  <div id="event-stream"></div>
+
+  <div id="view-controls">
+    <button class="active" onclick="setView('neural')">Neural</button>
+    <button onclick="setView('tree')">Tree</button>
+    <button onclick="setView('orbit')">Orbit</button>
+  </div>
+</div>
+
+<div id="detail-overlay" onclick="closeDetail()"></div>
+<div id="detail-modal">
+  <span class="modal-close" onclick="closeDetail()">✕</span>
+  <div id="detail-content"></div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ═══════════════════════════════════════
+// GLOBALS — auto-detect API endpoint
+// ═══════════════════════════════════════
+var TUNNEL_URL = 'https://nancy-leads-vocal-king.trycloudflare.com'; // Cloudflare tunnel for Vercel
+var API_HOST = TUNNEL_URL || (location.protocol + '//' + location.hostname + ':8199');
+var WS_URL = API_HOST.replace(/^http/, 'ws') + '/ws';
+var API_BASE = API_HOST + '/api';
+var ws = null;
+var snapshotData = {};
+var agentNodes = {};
+var sessionNodes = {};
+var brainNodes = {};
+var scene, camera, renderer, controls, composer;
+var clock = new THREE.Clock();
+var currentView = 'neural';
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+var hoveredObj = null;
+
+// ═══════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════
+function initScene() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x050508, 0.015);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 15, 35);
+
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.AdditiveBlending;
+  document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxDistance = 80;
+  controls.minDistance = 5;
+
+  // Post-processing bloom
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  var bloom = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.2, 0.4, 0.85
+  );
+  composer.addPass(bloom);
+
+  // Ambient light
+  scene.add(new THREE.AmbientLight(0x111111));
+
+  // Grid floor
+  var gridGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
+  var gridMat = new THREE.MeshBasicMaterial({
+    color: 0x1a0000, wireframe: true, transparent: true, opacity: 0.15
+  });
+  var grid = new THREE.Mesh(gridGeo, gridMat);
+  grid.rotation.x = -Math.PI/2;
+  grid.position.y = -5;
+  scene.add(grid);
+
+  // Background particles
+  var particleGeo = new THREE.BufferGeometry();
+  var particleCount = 2000;
+  var positions = new Float32Array(particleCount * 3);
+  var colors = new Float32Array(particleCount * 3);
+  for (var i = 0; i < particleCount; i++) {
+    positions[i*3] = (Math.random()-0.5)*100;
+    positions[i*3+1] = (Math.random()-0.5)*60;
+    positions[i*3+2] = (Math.random()-0.5)*100;
+    var r = Math.random();
+    if (r < 0.3) { colors[i*3]=0.5; colors[i*3+1]=0; colors[i*3+2]=0; }
+    else if (r < 0.6) { colors[i*3]=0.4; colors[i*3+1]=0.4; colors[i*3+2]=0.4; }
+    else { colors[i*3]=0.2; colors[i*3+1]=0; colors[i*3+2]=0; }
+  }
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  var particleMat = new THREE.PointsMaterial({
+    size: 0.08, vertexColors: true, transparent: true, opacity: 0.6,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  scene.add(new THREE.Points(particleGeo, particleMat));
+
+  // Brain core — pulsating sphere at center
+  var coreGeo = new THREE.IcosahedronGeometry(2, 3);
+  var coreMat = new THREE.MeshBasicMaterial({
+    color: 0xff0000, wireframe: true, transparent: true, opacity: 0.3,
+    blending: THREE.AdditiveBlending
+  });
+  var core = new THREE.Mesh(coreGeo, coreMat);
+  core.userData = {type: 'brain-core'};
+  scene.add(core);
+  brainNodes['core'] = core;
+
+  // Brain region rings
+  var regions = ['semantic','graph','episodic','working','procedural','sensory'];
+  var regionColors = [0xC0C0C0, 0x808080, 0xFF0000, 0xA0A0A0, 0xFF3333, 0xD0D0D0];
+  var regionRadii = [4, 6, 8, 10, 12, 14];
+  regions.forEach(function(name, i) {
+    var ringGeo = new THREE.RingGeometry(regionRadii[i]-0.05, regionRadii[i]+0.05, 64);
+    var ringMat = new THREE.MeshBasicMaterial({
+      color: regionColors[i], transparent: true, opacity: 0.15,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending
+    });
+    var ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI/2;
+    ring.position.y = -5;
+    ring.userData = {type: 'brain-ring', region: name};
+    scene.add(ring);
+    brainNodes[name] = ring;
+  });
+
+  // Resize handler
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Click handler for 3D objects
+  renderer.domElement.addEventListener('click', onSceneClick);
+  renderer.domElement.addEventListener('mousemove', onSceneMouseMove);
+}
+
+// ═══════════════════════════════════════
+// 3D AGENT NODES
+// ═══════════════════════════════════════
+function createAgentNode(agent) {
+  var group = new THREE.Group();
+  var isActive = agent.running || agent.status === 'active';
+  var color = new THREE.Color(agent.color || '#FF0000');
+
+  // Main sphere
+  var geo = new THREE.IcosahedronGeometry(isActive ? 0.6 : 0.35, 1);
+  var mat = new THREE.MeshBasicMaterial({
+    color: color, wireframe: true, transparent: true,
+    opacity: isActive ? 0.8 : 0.15,
+    blending: THREE.AdditiveBlending
+  });
+  var sphere = new THREE.Mesh(geo, mat);
+  group.add(sphere);
+
+  // Glow sphere
+  var glowGeo = new THREE.IcosahedronGeometry(isActive ? 0.9 : 0.5, 1);
+  var glowMat = new THREE.MeshBasicMaterial({
+    color: color, transparent: true, opacity: isActive ? 0.15 : 0.02,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  group.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // Orbit ring for active agents
+  if (isActive) {
+    var orbitGeo = new THREE.RingGeometry(1.0, 1.1, 32);
+    var orbitMat = new THREE.MeshBasicMaterial({
+      color: color, transparent: true, opacity: 0.2,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending
+    });
+    var orbit = new THREE.Mesh(orbitGeo, orbitMat);
+    orbit.rotation.x = Math.PI/3;
+    group.add(orbit);
+  }
+
+  // Line to brain core
+  var lineGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,0,0), group.position
+  ]);
+  var lineMat = new THREE.LineBasicMaterial({
+    color: color, transparent: true, opacity: 0.15,
+    blending: THREE.AdditiveBlending
+  });
+  var line = new THREE.Line(lineGeo, lineMat);
+  scene.add(line);
+
+  group.userData = {type: 'agent', name: agent.name, data: agent, line: line};
+  scene.add(group);
+  return group;
+}
+
+function positionAgentNodes() {
+  var agents = snapshotData.agents || {};
+  // Handle both array and dict formats
+  if (Array.isArray(agents)) {
+    var dict = {};
+    agents.forEach(function(a) { dict[a.name] = a; });
+    agents = dict;
+    snapshotData.agents = dict;
+  }
+  var keys = Object.keys(agents);
+  var activeAgents = keys.filter(function(k) { return agents[k].running || agents[k].status === 'active'; });
+  var inactiveAgents = keys.filter(function(k) { return !(agents[k].running || agents[k].status === 'active'); });
+
+  // Position active agents in inner ring
+  activeAgents.forEach(function(name, i) {
+    var angle = (i / activeAgents.length) * Math.PI * 2;
+    var radius = 8;
+    var x = Math.cos(angle) * radius;
+    var z = Math.sin(angle) * radius;
+    var y = Math.sin(angle * 2) * 2;
+
+    if (!agentNodes[name]) {
+      agentNodes[name] = createAgentNode(agents[name]);
+    }
+    agentNodes[name].position.set(x, y, z);
+
+    // Update connection line
+    var line = agentNodes[name].userData.line;
+    if (line) {
+      var positions = line.geometry.attributes.position;
+      positions.setXYZ(1, x, y, z);
+      positions.needsUpdate = true;
+    }
+  });
+
+  // Position inactive agents in outer ring
+  inactiveAgents.forEach(function(name, i) {
+    var angle = (i / inactiveAgents.length) * Math.PI * 2 + 0.3;
+    var radius = 18;
+    var x = Math.cos(angle) * radius;
+    var z = Math.sin(angle) * radius;
+    var y = -3 + Math.sin(i) * 1;
+
+    if (!agentNodes[name]) {
+      agentNodes[name] = createAgentNode(agents[name]);
+    }
+    agentNodes[name].position.set(x, y, z);
+  });
+}
+
+// ═══════════════════════════════════════
+// SESSION 3D NODES
+// ═══════════════════════════════════════
+function updateSessionNodes() {
+  var sessions = snapshotData.activeSessions || [];
+  // Remove old nodes
+  Object.keys(sessionNodes).forEach(function(sid) {
+    var exists = sessions.find(function(s) { return s.id === sid; });
+    if (!exists && sessionNodes[sid]) {
+      scene.remove(sessionNodes[sid]);
+      delete sessionNodes[sid];
+    }
+  });
+
+  // Create/update session nodes
+  sessions.slice(0, 50).forEach(function(s, i) {
+    if (!sessionNodes[s.id]) {
+      var geo = new THREE.OctahedronGeometry(0.3, 0);
+      var mat = new THREE.MeshBasicMaterial({
+        color: 0xff3333, wireframe: true, transparent: true,
+        opacity: 0.5, blending: THREE.AdditiveBlending
+      });
+      var node = new THREE.Mesh(geo, mat);
+      node.userData = {type: 'session', sessionId: s.id, data: s};
+      scene.add(node);
+      sessionNodes[s.id] = node;
+    }
+    var node = sessionNodes[s.id];
+    // Position in orbit around core
+    var angle = (i / sessions.length) * Math.PI * 2;
+    var radius = 5 + (i % 3) * 2;
+    node.position.set(
+      Math.cos(angle) * radius,
+      Math.sin(i * 0.7) * 3,
+      Math.sin(angle) * radius
+    );
+    // Size by token count
+    var scale = Math.max(0.2, Math.min(2, Math.log10(s.totalTokens + 1) * 0.3));
+    node.scale.setScalar(scale);
+  });
+}
+
+// ═══════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+  var t = clock.getElapsedTime();
+  var dt = clock.getDelta();
+
+  controls.update();
+
+  // Pulsate brain core
+  if (brainNodes['core']) {
+    brainNodes['core'].rotation.y = t * 0.2;
+    brainNodes['core'].rotation.x = Math.sin(t * 0.3) * 0.2;
+    var s = 1 + Math.sin(t * 2) * 0.1;
+    brainNodes['core'].scale.setScalar(s);
+    brainNodes['core'].material.opacity = 0.2 + Math.sin(t * 3) * 0.1;
+  }
+
+  // Animate agent nodes
+  Object.keys(agentNodes).forEach(function(name, i) {
+    var node = agentNodes[name];
+    node.rotation.y = t * 0.5 + i;
+    if (node.userData.data && (node.userData.data.running || node.userData.data.status === 'active')) {
+      node.position.y += Math.sin(t * 2 + i) * 0.003;
+      // Orbit ring spin
+      if (node.children[2]) node.children[2].rotation.z = t * 1.5;
+    }
+  });
+
+  // Animate session nodes
+  Object.keys(sessionNodes).forEach(function(sid, i) {
+    var node = sessionNodes[sid];
+    node.rotation.y = t * 0.8 + i;
+    node.rotation.x = Math.sin(t + i) * 0.3;
+  });
+
+  // Brain rings slow rotation
+  ['semantic','graph','episodic','working','procedural','sensory'].forEach(function(r, i) {
+    if (brainNodes[r]) {
+      brainNodes[r].rotation.z = t * 0.05 * (i+1);
+    }
+  });
+
+  composer.render();
+}
+
+// ═══════════════════════════════════════
+// WEBSOCKET CONNECTION
+// ═══════════════════════════════════════
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = function() {
+    console.log('WS connected');
+    addEvent('SYSTEM', 'WebSocket connected', 'system');
+  };
+  ws.onmessage = function(evt) {
+    var data = JSON.parse(evt.data);
+    handleWSMessage(data);
+  };
+  ws.onclose = function() {
+    console.log('WS disconnected, reconnecting in 3s...');
+    addEvent('SYSTEM', 'Reconnecting...', 'system');
+    setTimeout(connectWS, 3000);
+  };
+  ws.onerror = function(err) {
+    console.error('WS error', err);
+  };
+}
+
+function handleWSMessage(data) {
+  if (data.type === 'snapshot') {
+    snapshotData = data;
+    renderAgentChips(data.agents);
+    renderSessionList(data.activeSessions);
+    renderBrainRegions(data.brain);
+    renderSystemMetrics(data.metrics);
+    renderModelStats(data.agentStats);
+    updateTopBar(data);
+    positionAgentNodes();
+    updateSessionNodes();
+    // Show recent events
+    (data.recentEvents || []).reverse().forEach(function(e) {
+      addEvent(e.role, e.content, e.toolName ? 'tool' : 'msg', e.toolName);
+    });
+  }
+  else if (data.type === 'update') {
+    // Incremental update
+    if (data.events && data.events.length) {
+      data.events.forEach(function(e) {
+        addEvent(e.role, e.content, e.toolName ? 'tool' : 'msg', e.toolName);
+      });
+    }
+    if (data.activeSessions) {
+      snapshotData.activeSessions = data.activeSessions;
+      renderSessionList(data.activeSessions);
+      updateSessionNodes();
+    }
+    if (data.metrics) {
+      snapshotData.metrics = data.metrics;
+      renderSystemMetrics(data.metrics);
+      updateTopBar({metrics: data.metrics});
+    }
+    if (data.agentStats) {
+      snapshotData.agentStats = data.agentStats;
+      renderModelStats(data.agentStats);
+    }
+    if (data.sessionTree) {
+      snapshotData.sessionTree = data.sessionTree;
+    }
+  }
+  else if (data.type === 'status') {
+    if (data.brain) {
+      snapshotData.brain = data.brain;
+      renderBrainRegions(data.brain);
+    }
+    if (data.agents) {
+      snapshotData.agents = data.agents;
+      renderAgentChips(data.agents);
+      positionAgentNodes();
+    }
+    if (data.metrics) {
+      snapshotData.metrics = data.metrics;
+      renderSystemMetrics(data.metrics);
+    }
+  }
+  else if (data.type === 'sessionDetail') {
+    renderSessionDetail(data.data);
+  }
+  else if (data.type === 'pastSessions') {
+    renderPastSessions(data.data);
+  }
+}
+
+// ═══════════════════════════════════════
+// UI RENDERERS
+// ═══════════════════════════════════════
+function renderAgentChips(agents) {
+  if (!agents) return;
+  var bar = document.getElementById('agent-bar');
+  var html = '';
+  // Handle both dict and array formats
+  var list = Array.isArray(agents) ? agents : Object.keys(agents).map(function(k) {
+    return Object.assign({name: k}, agents[k]);
+  });
+  list.sort(function(a,b) {
+    if ((a.running||a.status==='active') && !(b.running||b.status==='active')) return -1;
+    if (!(a.running||a.status==='active') && (b.running||b.status==='active')) return 1;
+    return 0;
+  });
+  list.forEach(function(a) {
+    var isActive = a.running || a.status === 'active';
+    var dot = isActive ? 'active' : 'inactive';
+    var color = a.color || '#C0C0C0';
+    var icon = a.icon || (a.type === 'orchestrator' ? '🧠' : a.type === 'router' ? '🔀' : a.type === 'coder' ? '💻' : '◆');
+    html += '<div class="agent-chip" data-agent="'+a.name+'" title="'+(a.type||'')+' | '+(a.path||'')+'">' +
+      '<span class="dot '+dot+'" style="background:'+color+';color:'+color+'"></span>' +
+      '<span style="color:'+color+'">'+icon+' '+a.name+'</span>' +
+      '</div>';
+  });
+  bar.innerHTML = html;
+}
+
+function renderSessionList(sessions) {
+  if (!sessions) return;
+  var el = document.getElementById('session-list');
+  var tree = snapshotData.sessionTree || {};
+  var children = tree.children || {};
+
+  var html = '';
+  // Show root sessions first, then their subagents
+  var roots = sessions.filter(function(s) { return !s.parentId; });
+  var subs = sessions.filter(function(s) { return s.parentId; });
+
+  roots.slice(0, 20).forEach(function(s) {
+    html += formatSessionItem(s, false);
+    // Find children
+    var kids = subs.filter(function(sub) { return sub.parentId && sub.parentId.startsWith(s.id.slice(0,16)); });
+    kids.slice(0, 5).forEach(function(kid) {
+      html += formatSessionItem(kid, true);
+    });
+  });
+
+  // Add remaining subs not matched
+  if (roots.length === 0) {
+    sessions.slice(0, 25).forEach(function(s) {
+      html += formatSessionItem(s, !!s.parentId);
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function formatSessionItem(s, isSub) {
+  var cls = isSub ? 'session-item subagent-indent' : 'session-item active-session';
+  var title = s.title || s.model || s.id;
+  var tokens = formatNumber(s.totalTokens || 0);
+  var cost = s.costUsd ? '$' + s.costUsd.toFixed(4) : '';
+  return '<div class="'+cls+'" onclick="showSession(\''+s.id+'\')">' +
+    '<div class="title">'+(isSub?'└ ':'')+escHtml(title)+'</div>' +
+    '<div class="meta">'+s.source+' · msgs:'+s.messageCount+' · '+tokens+' tok'+(cost?' · '+cost:'')+'</div>' +
+    '<span class="model-tag">'+escHtml(s.model||'?')+'</span>' +
+    '</div>';
+}
+
+function renderBrainRegions(brain) {
+  if (!brain) return;
+  var el = document.getElementById('brain-regions');
+  var html = '';
+  var regionMap = {
+    semanticCortex: {name: 'Semantic Cortex', icon: '🔮', backend: 'FAISS'},
+    knowledgeGraph: {name: 'Knowledge Graph', icon: '🕸️', backend: 'NetworkX'},
+    episodicMemory: {name: 'Episodic Memory', icon: '💾', backend: 'SQLite'},
+    workingMemory: {name: 'Working Memory', icon: '⚡', backend: 'Redis'},
+    driveSync: {name: 'Drive Sync', icon: '☁️', backend: 'rclone'},
+  };
+  Object.keys(regionMap).forEach(function(key) {
+    var r = brain[key] || {};
+    var info = regionMap[key];
+    var statusClass = r.status === 'active' ? 'active' : (r.status === 'error' ? 'error' : '');
+    var metric = '';
+    if (r.vectorCount !== undefined) metric = '<b>'+r.vectorCount+'</b> vectors';
+    else if (r.nodes !== undefined) metric = '<b>'+r.nodes+'</b> nodes, <b>'+r.edges+'</b> edges';
+    else if (r.episodes !== undefined) metric = '<b>'+r.episodes+'</b> episodes';
+    else if (r.keys !== undefined) metric = '<b>'+r.keys+'</b> keys';
+    else if (r.files !== undefined) metric = '<b>'+r.files+'</b> files synced';
+    html += '<div class="brain-region">' +
+      '<div class="region-name">'+info.icon+' '+info.name+' <span style="color:var(--dim);font-size:9px">['+info.backend+']</span></div>' +
+      '<div class="region-status '+statusClass+'">'+r.status+(r.error?' — '+r.error:'')+'</div>' +
+      (metric ? '<div class="region-metric">'+metric+'</div>' : '') +
+      '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderSystemMetrics(metrics) {
+  if (!metrics || metrics.error) return;
+  var el = document.getElementById('system-metrics');
+  var cpu = metrics.cpu || 0;
+  var mem = metrics.memPercent || 0;
+  var disk = metrics.diskPercent || 0;
+  var cpuClass = cpu > 80 ? 'crit' : (cpu > 50 ? 'warn' : '');
+  var memClass = mem > 80 ? 'crit' : (mem > 60 ? 'warn' : '');
+  var diskClass = disk > 90 ? 'crit' : (disk > 70 ? 'warn' : '');
+
+  var html = '';
+  html += metricCard('CPU', cpu.toFixed(1)+'%', cpu, cpuClass, '#ff0000');
+  html += metricCard('RAM', mem.toFixed(1)+'%', mem, memClass, '#ff4444');
+  html += metricCard('Disk', disk.toFixed(1)+'%', disk, diskClass, '#ff6666');
+
+  // Agent processes
+  if (metrics.agentProcesses) {
+    Object.keys(metrics.agentProcesses).forEach(function(name) {
+      var procs = metrics.agentProcesses[name];
+      procs.forEach(function(p) {
+        html += '<div style="font-size:9px;color:var(--dim);padding:2px 8px">' +
+          name+' (pid:'+p.pid+') cpu:'+p.cpu+'% mem:'+p.mem+'%</div>';
+      });
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function metricCard(label, value, percent, cls, barColor) {
+  return '<div class="metric-card">' +
+    '<div class="label">'+label+'</div>' +
+    '<div class="value '+cls+'">'+value+'</div>' +
+    '<div class="metric-bar"><div class="fill" style="width:'+Math.min(percent,100)+'%;background:'+barColor+'"></div></div>' +
+    '</div>';
+}
+
+function renderModelStats(stats) {
+  if (!stats) return;
+  var el = document.getElementById('model-stats');
+  var html = '';
+  var entries = Object.values(stats).sort(function(a,b) {
+    return (b.activeSessions||0) - (a.activeSessions||0);
+  });
+  entries.slice(0, 8).forEach(function(s) {
+    html += '<div style="font-size:10px;padding:4px 8px;margin-bottom:2px;background:var(--card);border-radius:3px">' +
+      '<span style="color:var(--silver)">'+escHtml(s.model||'?')+'</span> ' +
+      '<span style="color:var(--red)">'+s.activeSessions+' active</span> / '+s.totalSessions+' total ' +
+      '<span style="color:var(--dim)">msgs:'+formatNumber(s.totalMessages)+' tok:'+formatNumber(s.totalInputTokens+s.totalOutputTokens)+'</span>' +
+      '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function updateTopBar(data) {
+  var sessions = data.activeSessions || [];
+  var metrics = data.metrics || {};
+  var stats = data.agentStats || {};
+
+  document.getElementById('stat-sessions').textContent = sessions.length;
+  document.getElementById('stat-active').textContent = sessions.filter(function(s){return !s.parentId}).length;
+  document.getElementById('stat-subagents').textContent = sessions.filter(function(s){return !!s.parentId}).length;
+
+  var totalTokens = 0, totalMsgs = 0;
+  Object.values(stats).forEach(function(s) {
+    totalTokens += (s.totalInputTokens||0) + (s.totalOutputTokens||0);
+    totalMsgs += (s.totalMessages||0);
+  });
+  document.getElementById('stat-tokens').textContent = formatNumber(totalTokens);
+  document.getElementById('stat-messages').textContent = formatNumber(totalMsgs);
+
+  document.getElementById('stat-cpu').textContent = (metrics.cpu||0).toFixed(0)+'%';
+  document.getElementById('stat-ram').textContent = (metrics.memPercent||0).toFixed(0)+'%';
+  document.getElementById('stat-disk').textContent = (metrics.diskPercent||0).toFixed(0)+'%';
+}
+
+function addEvent(role, content, type, toolName) {
+  var el = document.getElementById('event-stream');
+  var ts = new Date().toLocaleTimeString();
+  var roleColor = role === 'user' ? '#60a5fa' : (role === 'assistant' ? 'var(--red)' : 'var(--dim)');
+  var line = '<div class="event-line">' +
+    '<span class="ts">['+ts+']</span>' +
+    '<span class="role" style="color:'+roleColor+'">'+role+'</span>' +
+    (toolName ? '<span class="tool">['+toolName+']</span> ' : '') +
+    escHtml((content||'').slice(0,120)) +
+    '</div>';
+  el.insertAdjacentHTML('afterbegin', line);
+  // Keep last 50
+  while (el.children.length > 50) el.removeChild(el.lastChild);
+}
+
+// ═══════════════════════════════════════
+// SESSION DETAIL MODAL
+// ═══════════════════════════════════════
+window.showSession = function(sessionId) {
+  // Request detail via WS
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({type: 'getSession', sessionId: sessionId}));
+  } else {
+    // Fallback to REST
+    fetch(API_BASE + '/session/' + sessionId)
+      .then(function(r) { return r.json(); })
+      .then(function(d) { renderSessionDetail(d); });
+  }
+};
+
+function renderSessionDetail(data) {
+  if (!data) return;
+  var modal = document.getElementById('detail-modal');
+  var content = document.getElementById('detail-content');
+
+  var html = '<div class="modal-title">'+escHtml(data.title||data.id)+'</div>';
+  html += '<div style="font-size:10px;color:var(--dim);margin-bottom:12px">' +
+    'Model: <span style="color:var(--silver)">'+escHtml(data.model)+'</span> · ' +
+    'Source: '+data.source+' · ' +
+    'Messages: '+data.messageCount+' · ' +
+    'Tokens: '+formatNumber(data.totalTokens)+' · ' +
+    'Cost: $'+(data.costUsd||0).toFixed(4)+' · ' +
+    'Tool Calls: '+(data.toolCallCount||0) +
+    '</div>';
+
+  // Subagents
+  if (data.subagents && data.subagents.length) {
+    html += '<div style="font-size:10px;color:var(--red);margin-bottom:8px">Subagents: '+data.subagents.length+'</div>';
+    data.subagents.forEach(function(sa) {
+      html += '<div style="font-size:9px;padding:3px 8px;margin-bottom:2px;border-left:2px solid var(--border);color:var(--dim)">' +
+        '└ '+escHtml(sa.title||sa.model||sa.id)+' | '+sa.model+' | msgs:'+sa.toolCalls+
+        '</div>';
+    });
+  }
+
+  // Messages
+  html += '<div style="margin-top:12px;font-size:11px;color:var(--red);margin-bottom:8px">Messages ('+data.messages.length+' shown)</div>';
+  data.messages.slice(-30).forEach(function(m) {
+    var cls = m.role === 'user' ? 'user' : (m.role === 'assistant' ? 'assistant' : 'tool');
+    html += '<div class="msg-block '+cls+'">' +
+      '<span style="color:var(--silver);font-weight:bold">'+m.role+'</span> ' +
+      (m.toolName ? '<span style="color:#fbbf24">['+m.toolName+']</span> ' : '') +
+      '<span style="color:var(--dim)">'+escHtml((m.content||'').slice(0,200))+'</span>' +
+      '</div>';
+  });
+
+  content.innerHTML = html;
+  modal.classList.add('visible');
+  document.getElementById('detail-overlay').classList.add('visible');
+}
+
+window.closeDetail = function() {
+  document.getElementById('detail-modal').classList.remove('visible');
+  document.getElementById('detail-overlay').classList.remove('visible');
+};
+
+// ═══════════════════════════════════════
+// VIEW CONTROLS
+// ═══════════════════════════════════════
+window.setView = function(view) {
+  currentView = view;
+  document.querySelectorAll('#view-controls button').forEach(function(b) {
+    b.classList.toggle('active', b.textContent.toLowerCase() === view);
+  });
+
+  if (view === 'neural') {
+    camera.position.set(0, 15, 35);
+  } else if (view === 'tree') {
+    camera.position.set(0, 30, 0);
+    camera.lookAt(0, 0, 0);
+  } else if (view === 'orbit') {
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 2;
+    setTimeout(function() { controls.autoRotate = false; }, 15000);
+  }
+};
+
+// ═══════════════════════════════════════
+// 3D INTERACTION
+// ═══════════════════════════════════════
+function onSceneClick(evt) {
+  mouse.x = (evt.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(evt.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObjects(scene.children, true);
+  for (var i = 0; i < intersects.length; i++) {
+    var obj = intersects[i].object;
+    // Walk up to find userData
+    while (obj && (!obj.userData || !obj.userData.type)) obj = obj.parent;
+    if (obj && obj.userData.type === 'session') {
+      showSession(obj.userData.sessionId);
+      break;
+    }
+  }
+}
+
+function onSceneMouseMove(evt) {
+  mouse.x = (evt.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(evt.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObjects(scene.children, true);
+  if (intersects.length > 0) {
+    renderer.domElement.style.cursor = 'pointer';
+  } else {
+    renderer.domElement.style.cursor = 'default';
+  }
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function formatNumber(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return String(n);
+}
+
+function escHtml(s) {
+  var div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+initScene();
+animate();
+connectWS();
+
+</script>
+</body>
+</html>
