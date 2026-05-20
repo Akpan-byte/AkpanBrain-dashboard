@@ -1,5 +1,13 @@
 {
   "version": 2,
-  "builds": [{"src": "index.html", "use": "@vercel/static"}],
-  "routes": [{"src": "/(.*)", "dest": "/$1"}]
+  "builds": [
+    {"src": "index.html", "use": "@vercel/static"},
+    {"src": "three.min.js", "use": "@vercel/static"},
+    {"src": "OrbitControls.js", "use": "@vercel/static"}
+  ],
+  "routes": [
+    {"src": "/three.min.js", "dest": "/three.min.js"},
+    {"src": "/OrbitControls.js", "dest": "/OrbitControls.js"},
+    {"src": "/(.*)", "dest": "/$1"}
+  ]
 }

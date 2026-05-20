@@ -1,315 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>AkpanBrain — Neural Dashboard v10</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AKPANBRAIN // NEURAL INTERFACE</title>
+<script src="three.min.js"></script>
+<script src="OrbitControls.js"></script>
 <style>
-:root{--bg:#060610;--card:rgba(8,10,22,0.92);--border:rgba(255,0,60,0.12);--red:#ff003c;--cyan:#00f0ff;--green:#00ff88;--yellow:#ffd000;--purple:#a855f7;--glow:rgba(255,0,60,0.4);--font:'JetBrains Mono',monospace;--ui-font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+:root{--bg:#060610;--panel:#0a0a1a;--border:#1a1a3e;--cyan:#00f0ff;--red:#ff003c;--green:#00ff88;--purple:#a855f7;--yellow:#fbbf24;--font:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:#e0e0e0;font-family:var(--ui-font);overflow:hidden;height:100vh;width:100vw}
-#gl{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
-#bloom-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;filter:blur(8px);mix-blend-mode:screen;opacity:0.5}
-#scanlines{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px)}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none}
-#ui>*{pointer-events:auto}
-#top-bar{position:absolute;top:0;left:0;right:0;height:44px;background:linear-gradient(180deg,rgba(6,6,16,0.97),rgba(6,6,16,0.7));border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:6px;overflow-x:auto;scrollbar-width:none}
-#top-bar::-webkit-scrollbar{display:none}
-#brand{font-family:var(--font);font-size:12px;color:var(--red);letter-spacing:3px;white-space:nowrap;text-shadow:0 0 10px var(--glow);margin-right:8px;cursor:pointer}
-.chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--border);border-radius:10px;background:var(--card);font-size:9px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:var(--ui-font)}
-.chip:hover{border-color:var(--red);box-shadow:0 0 10px var(--glow)}
-.chip.active-chip{border-color:var(--cyan);box-shadow:0 0 8px rgba(0,240,255,0.3)}
-.chip .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.chip .dot.on{box-shadow:0 0 6px currentColor;animation:pulse 2s infinite}
-.chip .dot.off{opacity:0.2}
-.chip .icon{font-size:11px}
-.chip .name{color:#ccc;font-family:var(--font);font-size:8px;text-transform:uppercase}
-.chip .type{color:#444;font-size:7px;font-family:var(--font)}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
-
-/* ═══ TABS ═══ */
-#tab-bar{position:absolute;top:44px;left:0;right:0;height:32px;background:linear-gradient(180deg,rgba(6,6,16,0.95),rgba(6,6,16,0.6));border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:4px}
-.tab{padding:4px 14px;font-family:var(--font);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#555;cursor:pointer;border-radius:4px;transition:all .2s}
+body{background:var(--bg);color:#c8c8d8;font-family:var(--font);overflow:hidden;height:100vh;width:100vw}
+#gl{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#bloom{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;filter:blur(6px) brightness(1.4);mix-blend-mode:screen;opacity:.55}
+#scanlines{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px)}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none}
+#ui *{pointer-events:auto}
+#top-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:linear-gradient(180deg,rgba(6,6,16,.95),rgba(6,6,16,.7));border-bottom:1px solid var(--border);flex-wrap:wrap;min-height:44px}
+#brand{font-size:14px;letter-spacing:4px;color:var(--cyan);text-shadow:0 0 12px var(--cyan);margin-right:12px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;cursor:pointer;transition:all .2s;border:1px solid transparent;background:rgba(255,255,255,.03)}
+.chip:hover{border-color:var(--cyan);background:rgba(0,240,255,.08);transform:scale(1.05)}
+.chip.active-chip{border-color:var(--cyan);background:rgba(0,240,255,.1)}
+.chip .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.chip .dot.on{box-shadow:0 0 6px currentColor;animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+#tab-bar{display:flex;gap:2px;padding:0 16px;background:rgba(6,6,16,.9);border-bottom:1px solid var(--border)}
+.tab{padding:8px 18px;font-size:10px;letter-spacing:2px;cursor:pointer;color:#555;transition:all .2s;border-bottom:2px solid transparent;user-select:none}
 .tab:hover{color:#aaa}
-.tab.on{color:var(--cyan);background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15)}
-
-/* ═══ PANELS ═══ */
-.panel{position:absolute;top:76px;left:0;right:0;bottom:28px;overflow-y:auto;overflow-x:hidden;pointer-events:auto;display:none;padding:8px;scrollbar-width:thin;scrollbar-color:#1a1a2e transparent}
-.panel::-webkit-scrollbar{width:4px}
-.panel::-webkit-scrollbar-thumb{background:#1a1a2e;border-radius:2px}
+.tab.on{color:var(--cyan);border-bottom-color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+.panel{display:none;padding:12px;overflow-y:auto;height:calc(100vh - 108px);position:relative}
 .panel.visible{display:block}
-#panel-3d{padding:0;overflow:hidden}
-
-/* ═══ SIDE PANEL ═══ */
-#side-panel{position:absolute;top:76px;right:8px;width:240px;max-height:calc(100vh - 108px);background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;transition:width .3s;z-index:20}
-#side-panel.collapsed{width:28px}
-#side-toggle{display:flex;align-items:center;justify-content:center;height:24px;cursor:pointer;color:var(--red);font-size:12px;border-bottom:1px solid var(--border)}
-#side-content{padding:6px;overflow-y:auto;flex:1;font-family:var(--font);font-size:8px}
-#side-content h3{color:var(--cyan);font-size:9px;margin:6px 0 3px;text-transform:uppercase;letter-spacing:1px}
-.stat-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.02)}
-.stat-row .k{color:#555}.stat-row .v{color:#999}
-#events{margin-top:6px;max-height:180px;overflow-y:auto}
-.evt{padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.02);font-size:7px;line-height:1.3}
-.evt .t{color:#333}.evt .m{color:#777}
-
-/* ═══ AGENT GRID ═══ */
-.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-.agent-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;transition:all .3s;position:relative;overflow:hidden}
-.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0.6}
-.agent-card:hover{border-color:rgba(255,0,60,0.3);transform:translateY(-1px)}
-.agent-card.running{border-color:rgba(0,240,255,0.15)}
-.agent-card.running::before{background:linear-gradient(90deg,var(--cyan),transparent)}
-.agent-card.installed::before{background:linear-gradient(90deg,var(--yellow),transparent)}
-.agent-card.dormant{opacity:0.4}
-.agent-card.dormant::before{background:linear-gradient(90deg,#333,transparent)}
-.agent-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.agent-icon{font-size:20px}
-.agent-name{font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:1px}
-.agent-type{font-family:var(--font);font-size:7px;color:#555;text-transform:uppercase;letter-spacing:1px}
-.agent-status{display:inline-block;padding:1px 8px;border-radius:8px;font-size:7px;letter-spacing:1px;font-weight:700;font-family:var(--font)}
-.agent-status.active{background:rgba(0,255,136,0.12);color:var(--green);border:1px solid rgba(0,255,136,0.2)}
-.agent-status.installed{background:rgba(255,208,0,0.1);color:var(--yellow);border:1px solid rgba(255,208,0,0.15)}
-.agent-status.dormant{background:rgba(255,255,255,0.04);color:#444;border:1px solid rgba(255,255,255,0.05)}
-.agent-region{font-size:8px;color:#555;margin-top:4px;font-family:var(--font)}
-.agent-path{font-size:7px;color:#333;margin-top:2px;font-family:var(--font);word-break:break-all}
-
-/* ═══ BACKTEST ═══ */
-.version-nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.ver-btn{padding:6px 16px;font-family:var(--font);font-size:10px;letter-spacing:1px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:#666;cursor:pointer;transition:all .2s}
-.ver-btn:hover{color:#ccc;border-color:rgba(255,0,60,0.3)}
-.ver-btn.on{color:var(--cyan);border-color:var(--cyan);background:rgba(0,240,255,0.06);box-shadow:0 0 12px rgba(0,240,255,0.1)}
-.bt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px}
-.bt-stat{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px}
-.bt-stat .label{font-size:7px;color:#555;text-transform:uppercase;letter-spacing:1px;font-family:var(--font)}
-.bt-stat .value{font-size:20px;font-weight:900;margin-top:2px}
-.bt-stat .value.pos{color:var(--green)}
-.bt-stat .value.neg{color:var(--red)}
-.bt-stat .value.ice{color:var(--cyan)}
-#equity-canvas{width:100%;height:200px;background:#060610;border-radius:6px;border:1px solid var(--border)}
-.market-table{width:100%;border-collapse:collapse;font-size:9px;font-family:var(--font)}
-.market-table th{color:#555;text-align:left;padding:6px 4px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:1px;font-size:7px}
-.market-table td{padding:5px 4px;border-bottom:1px solid rgba(255,255,255,0.02)}
-.market-table .won{color:var(--green)}
-.market-table .lost{color:var(--red)}
-
-/* ═══ BRAIN PANEL ═══ */
-.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
-.region-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden}
-.region-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.region-name{font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:2px}
-.region-backend{font-family:var(--font);font-size:8px;color:#555;margin-bottom:8px}
-.region-desc{font-size:10px;color:#888;line-height:1.4;margin-bottom:8px}
-.region-functions{display:flex;flex-wrap:wrap;gap:4px}
-.region-fn{padding:2px 6px;font-size:7px;font-family:var(--font);border-radius:3px;background:rgba(255,255,255,0.03);color:#666;border:1px solid rgba(255,255,255,0.03)}
-
-/* ═══ BOTTOM BAR ═══ */
-#bottom-bar{position:absolute;bottom:0;left:0;right:0;height:28px;background:linear-gradient(0deg,rgba(6,6,16,0.97),rgba(6,6,16,0.7));border-top:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:14px;font-family:var(--font);font-size:8px;color:#444}
-.bstat{display:flex;align-items:center;gap:3px}
-.bstat .lbl{color:#333}.bstat .val{color:var(--cyan)}
-#focus-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--cyan);font-family:var(--font);font-size:16px;text-shadow:0 0 20px var(--cyan);opacity:0;transition:opacity .5s;pointer-events:none;text-align:center;letter-spacing:4px}
+#panel-3d{pointer-events:none}
+#panel-agents,#panel-sessions,#panel-brain,#panel-system{background:rgba(6,6,16,.85);backdrop-filter:blur(4px)}
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.agent-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;cursor:pointer;transition:all .25s;overflow:hidden}
+.agent-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,240,255,.1)}
+.agent-card.running{border-left:3px solid var(--green)}
+.agent-card.installed{border-left:3px solid var(--yellow)}
+.agent-card.dormant{border-left:3px solid #333;opacity:.6}
+.agent-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.agent-icon{font-size:24px}
+.agent-name{font-size:13px;font-weight:700;letter-spacing:1px}
+.agent-type{font-size:9px;color:#666;letter-spacing:1px;text-transform:uppercase}
+.agent-status{font-size:8px;padding:2px 8px;border-radius:10px;letter-spacing:1px;font-weight:700}
+.agent-status.active{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3)}
+.agent-status.installed{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid rgba(251,191,36,.2)}
+.agent-status.dormant{background:rgba(255,255,255,.03);color:#444;border:1px solid #222}
+.agent-region{font-size:9px;color:var(--purple);margin:4px 0}
+.agent-path{font-size:8px;color:#444;word-break:break-all}
+.agent-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none}
+.agent-card.expanded .agent-detail{display:block}
+.agent-detail .proc{font-size:9px;color:#888;margin:2px 0}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;font-size:10px}
+.stat-row .k{color:#666}.stat-row .v{color:var(--cyan)}
+#side-panel{position:fixed;right:0;top:48px;width:280px;height:calc(100vh - 108px);background:rgba(6,6,16,.92);border-left:1px solid var(--border);z-index:4;overflow-y:auto;transition:transform .3s;backdrop-filter:blur(4px)}
+#side-panel.collapsed{transform:translateX(280px)}
+#side-toggle{position:absolute;left:-28px;top:50%;transform:translateY(-50%);width:28px;height:48px;background:var(--panel);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--cyan)}
+#side-content{padding:12px}
+#side-content h3{font-size:9px;letter-spacing:2px;color:var(--cyan);margin:12px 0 6px;text-transform:uppercase}
+#side-content h3:first-child{margin-top:0}
+#brain-stats .stat-row .k{font-size:9px}#brain-stats .stat-row .v{font-size:9px}
+.evt{padding:3px 0;font-size:8px;border-bottom:1px solid rgba(255,255,255,.02)}
+.evt .t{color:#333;margin-right:6px}.evt .m{color:#777}.evt .m b{color:var(--cyan)}
+#bottom-bar{position:fixed;bottom:0;left:0;right:0;display:flex;gap:16px;padding:6px 16px;background:rgba(6,6,16,.9);border-top:1px solid var(--border);font-size:9px;z-index:4}
+.bstat{display:flex;gap:4px;align-items:center}
+.bstat .lbl{color:#444;letter-spacing:1px}.bstat .val{color:var(--cyan)}
+#focus-label{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);font-size:16px;letter-spacing:4px;color:var(--cyan);text-shadow:0 0 20px var(--cyan);opacity:0;transition:opacity .3s;pointer-events:none;z-index:5}
 #focus-label.show{opacity:1}
-@media(max-width:768px){#side-panel{display:none}#top-bar{height:38px}#tab-bar{height:28px}#bottom-bar{height:24px;font-size:7px}.chip{padding:2px 5px;font-size:8px}.chip .name{display:none}#brand{font-size:10px;letter-spacing:2px}.agent-grid{grid-template-columns:1fr}}
+#session-detail{position:fixed;top:108px;right:300px;width:420px;max-height:calc(100vh - 160px);background:var(--panel);border:1px solid var(--border);border-radius:8px;z-index:6;overflow-y:auto;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+#session-detail.open{display:block}
+#sd-header{padding:12px;border-bottom:1px solid var(--border)}
+#sd-close{position:absolute;top:8px;right:12px;cursor:pointer;font-size:16px;color:#666}
+#sd-close:hover{color:var(--red)}
+#sd-body{padding:12px;font-size:10px}
+#sd-body .field{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.02)}
+#sd-body .field .label{color:#666}#sd-body .field .value{color:var(--cyan)}
+#sd-body .msg-list{margin-top:10px;max-height:200px;overflow-y:auto}
+#sd-body .msg-item{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:9px}
+#sd-body .msg-role{font-weight:700;margin-right:6px}
+#sd-body .sub-list{margin-top:10px}
+#sd-body .sub-item{padding:4px 8px;margin:3px 0;background:rgba(168,85,247,.06);border-radius:4px;font-size:9px;border-left:2px solid var(--purple)}
+.tree-node{padding:4px 0 4px 20px;cursor:pointer;font-size:10px;transition:background .15s;border-radius:4px}
+.tree-node:hover{background:rgba(0,240,255,.05)}
+.tree-node.active-node{background:rgba(0,240,255,.1);border-left:2px solid var(--cyan)}
+.tree-node .model-tag{font-size:8px;color:var(--purple);margin-left:8px}
+.tree-node .count-tag{font-size:8px;color:#555;margin-left:4px}
+.tree-toggle{display:inline-block;width:14px;font-size:10px;color:#555;cursor:pointer}
+.tree-children{margin-left:12px;border-left:1px solid var(--border)}
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.region-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden;transition:all .25s}
+.region-card:hover{border-color:var(--purple);box-shadow:0 0 20px rgba(168,85,247,.1)}
+.region-name{font-size:12px;font-weight:700;letter-spacing:1px}
+.region-backend{font-size:9px;color:#555;margin:4px 0}
+.region-metrics .metric{display:flex;justify-content:space-between;font-size:10px;padding:2px 0}
+.metric .ml{color:#666}.metric .mv{color:var(--cyan)}
+.gauge-wrap{margin:8px 0}
+.gauge-bar{height:4px;background:#111;border-radius:2px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:2px;transition:width .5s;box-shadow:0 0 6px currentColor}
+.sys-bar{margin:12px 0}
+.sys-bar .sys-label{font-size:9px;color:#666;letter-spacing:1px;display:flex;justify-content:space-between}
+.sys-bar .sys-track{height:8px;background:#111;border-radius:4px;overflow:hidden;margin:4px 0}
+.sys-bar .sys-fill{height:100%;border-radius:4px;transition:width .5s}
+#scan-btn{position:fixed;bottom:32px;right:300px;padding:6px 14px;background:rgba(0,240,255,.08);border:1px solid var(--cyan);border-radius:4px;color:var(--cyan);font-size:9px;letter-spacing:2px;cursor:pointer;z-index:5;transition:all .2s}
+#scan-btn:hover{background:rgba(0,240,255,.2);box-shadow:0 0 12px rgba(0,240,255,.3)}
+#scan-btn:active{transform:scale(.95)}
+.session-split{display:flex;height:100%}
+#session-tree{width:50%;overflow-y:auto;padding-right:8px;border-right:1px solid var(--border)}
+#session-info{width:50%;overflow-y:auto;padding-left:12px}
+#session-info .empty{color:#333;text-align:center;padding:40px;font-size:11px}
 </style>
 </head>
 <body>
 <canvas id="gl"></canvas>
-<canvas id="bloom-canvas"></canvas>
+<canvas id="bloom"></canvas>
 <div id="scanlines"></div>
 <div id="ui">
 <div id="top-bar"><span id="brand">AKPANBRAIN</span></div>
 <div id="tab-bar">
-<div class="tab on" data-tab="3d">⬡ 3D</div>
-<div class="tab" data-tab="agents">◉ AGENTS</div>
-<div class="tab" data-tab="backtest">❄ COLDMATH</div>
-<div class="tab" data-tab="brain">⟁ BRAIN</div>
+<div class="tab on" data-tab="3d">NEURAL MAP</div>
+<div class="tab" data-tab="agents">AGENTS</div>
+<div class="tab" data-tab="sessions">SESSIONS</div>
+<div class="tab" data-tab="brain">BRAIN</div>
+<div class="tab" data-tab="system">SYSTEM</div>
 </div>
 <div id="panel-3d" class="panel visible"></div>
 <div id="panel-agents" class="panel"><div class="agent-grid" id="agent-grid"></div></div>
-<div id="panel-backtest" class="panel"><div id="backtest-content"></div></div>
+<div id="panel-sessions" class="panel">
+<div class="session-split">
+<div id="session-tree"></div>
+<div id="session-info"><div class="empty">Click a session to view details</div></div>
+</div>
+</div>
 <div id="panel-brain" class="panel"><div class="region-grid" id="region-grid"></div></div>
-<div id="side-panel"><div id="side-toggle">◀</div><div id="side-content"><h3>Brain Regions</h3><div id="brain-stats"></div><h3>Events</h3><div id="events"></div></div></div>
+<div id="panel-system" class="panel"><div id="system-content"></div></div>
+</div>
+<div id="side-panel"><div id="side-toggle">◀</div><div id="side-content">
+<h3>Brain Regions</h3><div id="brain-stats"></div>
+<h3>Live Events</h3><div id="events"></div>
+</div></div>
 <div id="bottom-bar"></div>
 <div id="focus-label"></div>
-</div>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
-<script type="module">
-import*as THREE from'three';
-import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+<div id="session-detail"><div id="sd-header"><span id="sd-close">✕</span></div><div id="sd-body"></div></div>
+<button id="scan-btn">⟳ SCAN</button>
 
-// ═══ EMBEDDED DATA ═══
-var EMBEDDED_DATA={"agents":{"hermes":{"name":"hermes","type":"reasoning","color":"#3B82F6","icon":"\ud83e\udde0","installed":true,"running":true,"path":"/config/.local/bin/hermes","region":"working"},"claude-code":{"name":"claude-code","type":"coding","color":"#D97706","icon":"\ud83d\udfe1","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/claude","region":"procedural"},"gemini-cli":{"name":"gemini-cli","type":"search","color":"#4285F4","icon":"\ud83d\udfe2","installed":true,"running":true,"path":"/config/.nvm/versions/node/v20.20.0/bin/gemini","region":"semantic"},"kilo-code":{"name":"kilo-code","type":"coding","color":"#F59E0B","icon":"\ud83d\udfe3","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/kilo","region":"procedural"},"kimi-code":{"name":"kimi-code","type":"coding","color":"#EF4444","icon":"\ud83d\udd34","installed":true,"running":false,"path":"/config/.local/bin/kimi","region":"procedural"},"codex":{"name":"codex","type":"coding","color":"#22D3EE","icon":"\ud83d\udd35","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/codex","region":"procedural"},"opencode":{"name":"opencode","type":"coding","color":"#10B981","icon":"\ud83c\udf0a","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/opencode","region":"procedural"},"qwen-code":{"name":"qwen-code","type":"llm","color":"#6366F1","icon":"\ud83e\ude77","installed":false,"running":false,"path":"","region":"procedural"},"nullclaw":{"name":"nullclaw","type":"routing","color":"#8B5CF6","icon":"\ud83d\udd2e","installed":true,"running":false,"path":"/config/.local/bin/nullclaw","region":"working"},"roo-code":{"name":"roo-code","type":"coding","color":"#EF4444","icon":"\ud83d\udd34","installed":true,"running":false,"path":"/config/.local/bin/roo","region":"procedural"},"gptme":{"name":"gptme","type":"coding","color":"#06B6D4","icon":"\ud83d\udc8e","installed":true,"running":false,"path":"/config/.local/bin/gptme","region":"procedural"},"jcode":{"name":"jcode","type":"coding","color":"#64748B","icon":"\u2705","installed":true,"running":true,"path":"/config/.local/bin/jcode","region":"episodic"},"codebuff":{"name":"codebuff","type":"coding","color":"#EC4899","icon":"\ud83d\udc8e","installed":true,"running":true,"path":"/config/.nvm/versions/node/v20.20.0/bin/codebuff","region":"procedural"},"cline":{"name":"cline","type":"coding","color":"#06B6D4","icon":"\u2699\ufe0f","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/cline","region":"procedural"},"ironclaw":{"name":"ironclaw","type":"security","color":"#A855F7","icon":"\ud83d\udee1\ufe0f","installed":false,"running":false,"path":"","region":"working"},"claw-code":{"name":"claw-code","type":"coding","color":"#F97316","icon":"\ud83e\udd16","installed":true,"running":false,"path":"/config/.local/bin/claw-code-agent","region":"procedural"},"openfang":{"name":"openfang","type":"coding","color":"#EF4444","icon":"\ud83d\udd25","installed":true,"running":false,"path":"/config/.local/bin/cli-anything-openfang","region":"procedural"}},"backtest":[{"id":1,"version":"V3-realistic","timestamp":"2026-05-20T09:42:31.143449+00:00","starting_bankroll":25.0,"final_bankroll":32.14,"total_pnl":7.14,"return_pct":0.2857,"max_drawdown":0.0,"win_rate":1.0,"total_markets":27,"qualifying_markets":6,"winning_trades":6,"losing_trades":0,"false_positives":0,"false_negatives":15,"trades_json":"[{\"day\": 2, \"question\": \"Will the highest temperature in London be between 66-67\\u00b0F on May 10?\", \"city\": \"London\", \"threshold_c\": 19.2, \"margin_c\": -4.9, \"nws_conf_modeled\": 0.975, \"nws_conf_empirical\": 0.99, \"confidence_used\": 0.99, \"entry_price\": 0.9, \"position_size\": 5.6251, \"pnl\": 0.625, \"bankroll_after\": 25.63, \"won\": true, \"forecast_temp\": 14.3, \"actual_temp\": 13.6}, {\"day\": 13, \"question\": \"Will the highest temperature in Qingdao be 14\\u00b0C on May 19?\", \"city\": \"Qingdao\", \"threshold_c\": 14.0, \"margin_c\": 5.9, \"nws_conf_modeled\": 0.9909, \"nws_conf_empirical\": 0.9963, \"confidence_used\": 0.9963, \"entry_price\": 0.94, \"position_size\": 6.016, \"pnl\": 0.384, \"bankroll_after\": 26.01, \"won\": true, \"forecast_temp\": 19.9, \"actual_temp\": 20.2}, {\"day\": 14, \"question\": \"Will the highest temperature in Paris be 15\\u00b0C or below on May 20?\", \"city\": \"Paris\", \"threshold_c\": 15.0, \"margin_c\": 5.7, \"nws_conf_modeled\": 0.9887, \"nws_conf_empirical\": 0.9955, \"confidence_used\": 0.9955, \"entry_price\": 0.7828, \"position_size\": 6.3669, \"pnl\": 1.7669, \"bankroll_after\": 27.78, \"won\": true, \"forecast_temp\": 20.7, \"actual_temp\": 20.2}, {\"day\": 15, \"question\": \"Will the highest temperature in Shenzhen be 21\\u00b0C or below on May 20?\", \"city\": \"Shenzhen\", \"threshold_c\": 21.0, \"margin_c\": 7.8, \"nws_conf_modeled\": 0.9991, \"nws_conf_empirical\": 0.9996, \"confidence_used\": 0.9996, \"entry_price\": 0.7972, \"position_size\": 6.9316, \"pnl\": 1.7633, \"bankroll_after\": 29.54, \"won\": true, \"forecast_temp\": 28.8, \"actual_temp\": 26.8}, {\"day\": 16, \"question\": \"Will the highest temperature in Tokyo be 22\\u00b0C on May 20?\", \"city\": \"Tokyo\", \"threshold_c\": 22.0, \"margin_c\": 7.8, \"nws_conf_modeled\": 0.9991, \"nws_conf_empirical\": 0.9996, \"confidence_used\": 0.9996, \"entry_price\": 0.94, \"position_size\": 7.3403, \"pnl\": 0.4685, \"bankroll_after\": 30.01, \"won\": true, \"forecast_temp\": 29.8, \"actual_temp\": 30.7}, {\"day\": 21, \"question\": \"Will the highest temperature in Austin be 83\\u00b0F or below on May 19?\", \"city\": \"Austin\", \"threshold_c\": 28.3, \"margin_c\": 5.0, \"nws_conf_modeled\": 0.9772, \"nws_conf_empirical\": 0.9909, \"confidence_used\": 0.9909, \"entry_price\": 0.7713, \"position_size\": 7.2034, \"pnl\": 2.1356, \"bankroll_after\": 32.14, \"won\": true, \"forecast_temp\": 33.3, \"actual_temp\": 32.5}]","equity_curve_json":"[25.0, 25.63, 26.01, 27.78, 29.54, 30.01, 32.14]","notes":"Market-realistic entry prices; is_exact_temp fix; pure-Python norm_cdf; \u03c3=3\u00b0C","equity_curve":[25.0,25.63,26.01,27.78,29.54,30.01,32.14]},{"id":2,"version":"V2-realistic","timestamp":"2026-05-20T09:42:31.143449+00:00","starting_bankroll":25.0,"final_bankroll":25.76,"total_pnl":0.76,"return_pct":0.0303,"max_drawdown":0.0,"win_rate":1.0,"total_markets":27,"qualifying_markets":2,"winning_trades":2,"losing_trades":0,"false_positives":0,"false_negatives":23,"trades_json":"[{\"day\": 13, \"question\": \"Will the highest temperature in Qingdao be 14\\u00b0C on May 19?\", \"margin_c\": 6.2, \"nws_conf_modeled\": 0.9934, \"nws_conf_empirical\": null, \"confidence_used\": 0.9934, \"entry_price\": 0.94, \"position_size\": 5.5657, \"pnl\": 0.3553, \"bankroll_after\": 25.36, \"won\": true}, {\"day\": 16, \"question\": \"Will the highest temperature in Tokyo be 22\\u00b0C on May 20?\", \"margin_c\": 8.7, \"nws_conf_modeled\": 0.9997, \"nws_conf_empirical\": null, \"confidence_used\": 0.9997, \"entry_price\": 0.94, \"position_size\": 6.3123, \"pnl\": 0.4029, \"bankroll_after\": 25.76, \"won\": true}]","equity_curve_json":"[25.0, 25.36, 25.76]","notes":"Market-realistic entry prices; is_exact_temp fix; pure-Python norm_cdf; \u03c3=3\u00b0C","equity_curve":[25.0,25.36,25.76]}],"brain":{"regions":6,"vectors":2,"episodes":1,"graph_nodes":104,"redis_keys":15}};
-var API_BASE=location.hostname==='localhost'?'http://localhost:8199':'https://brain-api.akpan.workers.dev';
-var WS_URL=location.hostname==='localhost'?'ws://localhost:8199/ws':null;
-var scene,camera,renderer,controls,bloomRenderer,bloomScene;
-var neuronMesh,synapseLines,starField,gridFloor;
-var agents=[],agentMap={},neuronPositions=[],targetCamPos=null,camLerp=0;
-var clock=new THREE.Clock();
-var pulseTime=0;
-var eventLog=[];
+<script>
+// ═══ CONFIG ═══
+var API_BASE=window.location.port==='8199'?'':(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'?'http://localhost:8199':'http://'+window.location.hostname+':8199');
+var WS_URL=API_BASE.replace(/^http/,'ws')+'/ws';
+var POLL_MS=5000;
 var currentTab='3d';
-var selectedVersion=0;
+var agents=[],agentMap={},sessionTree=[],activeSessions=[],brainData={},metricsData={},agentStatsData={},eventLog=[];
+var selectedSessionId=null;
+var scene,camera,renderer,controls,bloomScene,bloomRenderer,starField,gridFloor,neuronMesh,synapseLines;
+var neuronPositions=[],pulseTime=0,targetCamPos=null,camLerp=0;
+var clock=new THREE.Clock();
 
-// ═══ BRAIN REGIONS ═══
+// ═══ DEMO DATA ═══
+var DEMO_AGENTS=[
+{name:'hermes',type:'orchestrator',color:'#4FC3F7',icon:'🧠',installed:true,running:true,path:'/usr/local/bin/hermes'},
+{name:'claude',type:'coder',color:'#F59E0B',icon:'🟡',installed:true,running:true,path:'/usr/local/bin/claude'},
+{name:'gemini',type:'coder',color:'#34D399',icon:'🟢',installed:true,running:false,path:'/usr/local/bin/gemini'},
+{name:'kilo',type:'coder',color:'#A78BFA',icon:'🟣',installed:true,running:true,path:'/usr/local/bin/kilocode'},
+{name:'kimi',type:'coder',color:'#FB923C',icon:'🟠',installed:true,running:false,path:'/usr/local/bin/kimi'},
+{name:'codex',type:'coder',color:'#38BDF8',icon:'🔵',installed:false,running:false,path:''},
+{name:'opencode',type:'coder',color:'#2DD4BF',icon:'🌊',installed:false,running:false,path:''},
+{name:'qwen',type:'coder',color:'#F472B6',icon:'🩷',installed:false,running:false,path:''},
+{name:'roo',type:'coder',color:'#EF4444',icon:'🔴',installed:false,running:false,path:''},
+{name:'nullclaw',type:'router',color:'#8B5CF6',icon:'🔮',installed:true,running:true,path:'/usr/local/bin/nullclaw'},
+{name:'gptme',type:'coder',color:'#06B6D4',icon:'💎',installed:false,running:false,path:''},
+{name:'jcode',type:'coder',color:'#10B981',icon:'✅',installed:true,running:false,path:'/usr/local/bin/jcode'},
+{name:'codebuff',type:'coder',color:'#FBBF24',icon:'⚡',installed:false,running:false,path:''},
+{name:'goose',type:'coder',color:'#F97316',icon:'🦆',installed:false,running:false,path:''},
+{name:'codel',type:'coder',color:'#A3E635',icon:'💻',installed:false,running:false,path:''}
+];
+var DEMO_BRAIN={semanticCortex:{status:'active',vectorCount:247},knowledgeGraph:{status:'active',nodes:89,edges:142},episodicMemory:{status:'active',episodes:34},workingMemory:{status:'active',keys:18},driveSync:{status:'connected',files:156,totalSize:'2.4GB'}};
+var DEMO_TREE={roots:[
+{id:'s1',title:'Brain Architecture Build',model:'z-ai/glm-5.1',startedAt:Date.now()/1000-3600,parentId:null,messageCount:71,totalTokens:1180012,toolCallCount:32,costUsd:0,platform:'telegram',children:[
+{id:'s1a',title:'Redis Setup Subagent',model:'anthropic/claude-sonnet-4',startedAt:Date.now()/1000-3500,parentId:'s1',messageCount:12,totalTokens:45000,toolCallCount:8,costUsd:.02,platform:'delegate',children:[]},
+{id:'s1b',title:'FAISS Index Build',model:'groq/llama-3.3-70b',startedAt:Date.now()/1000-3200,parentId:'s1',messageCount:8,totalTokens:22000,toolCallCount:5,costUsd:.005,platform:'delegate',children:[]}
+]},
+{id:'s2',title:'Dashboard Deployment',model:'z-ai/glm-5.1',startedAt:Date.now()/1000-7200,parentId:null,messageCount:45,totalTokens:890000,toolCallCount:28,costUsd:0,platform:'telegram',children:[]},
+{id:'s3',title:'Polymarket Tracker',model:'deepseek/deepseek-v4-flash',startedAt:Date.now()/1000-14400,parentId:null,messageCount:23,totalTokens:340000,toolCallCount:15,costUsd:.01,platform:'cron',children:[]}
+]};
+var DEMO_METRICS={cpu:23,memTotal:16777216,memUsed:8388608,memPercent:50,diskTotal:57671680,diskUsed:54190131,diskPercent:94,netBytesSent:1048576,netBytesRecv:8388608,agentProcesses:{hermes:[{pid:1001,cpu:2.3,mem:1.2,cmd:'hermes agent --start'}],claude:[{pid:1002,cpu:5.1,mem:3.4,cmd:'claude code --yolo'}]}};
+
+// ═══ EMBEDDED DATA (replaced by build.py with {"agents":{"hermes":{"name":"hermes","type":"orchestrator","color":"#4FC3F7","icon":"\ud83e\udde0","installed":true,"running":true,"path":"/config/.local/bin/hermes"},"claude":{"name":"claude","type":"coder","color":"#F59E0B","icon":"\ud83d\udfe1","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/claude"},"gemini":{"name":"gemini","type":"coder","color":"#34D399","icon":"\ud83d\udfe2","installed":true,"running":true,"path":"/config/.nvm/versions/node/v20.20.0/bin/gemini"},"kilo":{"name":"kilo","type":"coder","color":"#A78BFA","icon":"\ud83d\udfe3","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/kilo"},"kimi":{"name":"kimi","type":"coder","color":"#FB923C","icon":"\ud83d\udfe0","installed":true,"running":false,"path":"/config/.local/bin/kimi"},"codex":{"name":"codex","type":"coder","color":"#38BDF8","icon":"\ud83d\udd35","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/codex"},"opencode":{"name":"opencode","type":"coder","color":"#2DD4BF","icon":"\ud83c\udf0a","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/opencode"},"qwen":{"name":"qwen","type":"coder","color":"#F472B6","icon":"\ud83e\ude77","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/qwen"},"roo":{"name":"roo","type":"coder","color":"#EF4444","icon":"\ud83d\udd34","installed":true,"running":false,"path":"/config/.local/bin/roo"},"nullclaw":{"name":"nullclaw","type":"router","color":"#8B5CF6","icon":"\ud83d\udd2e","installed":true,"running":false,"path":"/config/.local/bin/nullclaw"},"gptme":{"name":"gptme","type":"coder","color":"#06B6D4","icon":"\ud83d\udc8e","installed":true,"running":false,"path":"/config/.local/bin/gptme"},"jcode":{"name":"jcode","type":"coder","color":"#10B981","icon":"\u2705","installed":true,"running":true,"path":"/config/.local/bin/jcode"},"codebuff":{"name":"codebuff","type":"coder","color":"#FBBF24","icon":"\u26a1","installed":true,"running":true,"path":"/config/.nvm/versions/node/v20.20.0/bin/codebuff"},"goose":{"name":"goose","type":"coder","color":"#F97316","icon":"\ud83e\udd86","installed":true,"running":false,"path":"/config/.local/bin/goose"},"codel":{"name":"codel","type":"coder","color":"#A3E635","icon":"\ud83d\udcbb","installed":false,"running":false,"path":""}},"brain":{"semanticCortex":{"status":"active","vectorCount":1},"knowledgeGraph":{"status":"active","nodes":104,"edges":52},"episodicMemory":{"status":"active","episodes":262},"workingMemory":{"status":"active","keys":0},"driveSync":{"status":"connected","files":20,"totalSize":178275}},"tree":[{"id":"20260519_221211_2e88d7","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228731.7840846,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221152_e6ce73","title":"","model":"z-ai/glm-5.1","startedAt":1779228713.0940537,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221119_da4e3b","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228679.4016793,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221104_9c5cfa","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228664.3837824,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221041_4af6ba","title":"","model":"minimax/minimax-m2.7","startedAt":1779228641.8787706,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_220229_7857fd","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228150.1070738,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_220110_428c72","title":"","model":"minimax/minimax-m2.7","startedAt":1779228070.6888702,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_071111_851ff7","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779088271.8449917,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_070517_de8f58","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779087918.2022266,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_065115_8acd74","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779087075.9027123,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_065057_e94e67","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779087057.334957,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_064956_e2eab8","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086996.6757035,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_064806_75c1ba","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086886.9750814,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_064719_e2559d","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086839.4889133,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_063937_4e7c59","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086377.9870613,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_062812_26ab9c","title":"","model":"minimax/minimax-m2.7","startedAt":1779085693.2984257,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_062719_499183","title":"","model":"minimax/minimax-m2.7","startedAt":1779085639.9681532,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_062244_e47dbf","title":"","model":"freebuff-bridge","startedAt":1779085378.8128998,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_061002_5df22d","title":"","model":"minimax/minimax-m2.7","startedAt":1779084603.2750342,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_060704_22a245","title":"","model":"minimax/minimax-m2.7","startedAt":1779084425.218675,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_060650_75c0b5","title":"","model":"freebuff-minimax","startedAt":1779084410.4198735,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_060633_b37e61","title":"","model":"freebuff-minimax/minimax/minimax-m2.7","startedAt":1779084394.1483924,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_054113_4ef935","title":"","model":"minimax/minimax-m2.7","startedAt":1779082873.4882407,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_010417_b453f2","title":"","model":"~anthropic/claude-sonnet-latest","startedAt":1779066257.4211292,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260516_173040_c0be20","title":"","model":"gemini-2.0-flash","startedAt":1778952641.619006,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260516_173016_4bddee","title":"","model":"anthropic/claude-sonnet-4-20250514","startedAt":1778952617.7228394,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260510_051203_6d4120","title":"New Conversation","model":"minimax-m2.5-free","startedAt":1778390113.5521755,"parentId":null,"source":"cli","messageCount":2,"inputTokens":18810,"outputTokens":21,"totalTokens":18831,"cacheRead":443,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260510_045552_52dde8","title":"","model":"minimax-m2.5-free","startedAt":1778388968.7554302,"parentId":null,"source":"cli","messageCount":2,"inputTokens":17032,"outputTokens":92,"totalTokens":17124,"cacheRead":443,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260427_195129_c97b8e","title":"Finding OSINT Tools for Private Information Gathering","model":"minimaxai/minimax-m2.5","startedAt":1777319838.6534605,"parentId":null,"source":"cli","messageCount":15,"inputTokens":185904,"outputTokens":3285,"totalTokens":189189,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":6,"apiCallCount":7,"platform":"cli","children":[]},{"id":"20260427_092917_fcf13a","title":"Scrapling Instagram Profile Access","model":"minimaxai/minimax-m2.5","startedAt":1777282673.1556072,"parentId":null,"source":"cli","messageCount":82,"inputTokens":2005090,"outputTokens":20708,"totalTokens":2025798,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":37,"apiCallCount":41,"platform":"cli","children":[]},{"id":"cron_cc79ab1d20cd_20260427_083708","title":"","model":"gemini-2.5-flash","startedAt":1777279046.828788,"parentId":null,"source":"cron","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cron","children":[]},{"id":"20260427_010901_ca71f3","title":"Instagram Scraping Without API","model":"minimaxai/minimax-m2.5","startedAt":1777254098.414822,"parentId":null,"source":"cli","messageCount":36,"inputTokens":397055,"outputTokens":5691,"totalTokens":402746,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":17,"apiCallCount":18,"platform":"cli","children":[]},{"id":"20260425_213651_d33a5f","title":"","model":"xai/grok-2-1212","startedAt":1777153011.8645866,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_213542_ecd6f6","title":"","model":"xai/grok-2-1212","startedAt":1777152943.3036664,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_213440_72855d","title":"","model":"nvidia/llama-3.1-nemotron-70b-instruct","startedAt":1777152881.2360358,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_210658_54e81d","title":"","model":"nvidia/llama-3.1-nemotron-70b-instruct","startedAt":1777151218.9114895,"parentId":null,"source":"cli","messageCount":3,"inputTokens":2676,"outputTokens":15,"totalTokens":2691,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":1,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260425_210614_7cd525","title":"","model":"meta/llama-3.1-8b-instruct","startedAt":1777151174.357842,"parentId":null,"source":"cli","messageCount":12,"inputTokens":5208,"outputTokens":235,"totalTokens":5443,"cacheRead":20000,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":5,"apiCallCount":6,"platform":"cli","children":[]},{"id":"20260425_210539_3ad1b4","title":"","model":"meta/llama-3.1-8b-instruct","startedAt":1777151139.6211824,"parentId":null,"source":"cli","messageCount":4,"inputTokens":18586,"outputTokens":56,"totalTokens":18642,"cacheRead":18480,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":1,"apiCallCount":2,"platform":"cli","children":[]},{"id":"20260425_210505_c97cc3","title":"","model":"meta/llama-3.1-8b-instruct","startedAt":1777151106.6109042,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_192101_4542f0","title":"","model":"anthropic/claude-3.5-sonnet","startedAt":1777144866.8993075,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_191242_337f9b","title":"","model":"anthropic/claude-3.5-sonnet","startedAt":1777144366.9840877,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_191131_dbde03","title":"","model":"minimax-m2.5-free","startedAt":1777144296.4924328,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_190946_611fd7","title":"","model":"minimax-m2.5-free","startedAt":1777144191.1479058,"parentId":null,"source":"cli","messageCount":2,"inputTokens":15795,"outputTokens":10,"totalTokens":15805,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260425_190821_a4fd1d","title":"","model":"anthropic/claude-3.5-sonnet","startedAt":1777144106.0789564,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_190716_1eb465","title":"","model":"minimax-m2.5-free","startedAt":1777144041.5417936,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_190619_10251c","title":"","model":"minimax-m2.5-free","startedAt":1777143984.6340492,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_185348_368b5a","title":"","model":"claude-sonnet-4-20250529","startedAt":1777143235.9437335,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_120658_1c7cb2","title":"","model":"openrouter/anthropic/claude-3.5-sonnet","startedAt":1777118819.3695815,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_120559_f45293","title":"","model":"openrouter/anthropic/claude-sonnet-4-20250529","startedAt":1777118760.6603925,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_120527_82675e","title":"","model":"openrouter/anthropic/claude-3.5-sonnet","startedAt":1777118728.935099,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260424_031547_4e1c99","title":"New Wallets Found Last 24 Hours","model":"gemma-4-31b-it","startedAt":1777001497.3111498,"parentId":null,"source":"cli","messageCount":80,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":32,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260422_212054_7207ed","title":"","model":"gemma4-31B","startedAt":1776892867.9150949,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260422_090721_4f69d1","title":"","model":"moonshotai/kimi-k2.5","startedAt":1776850602.9850743,"parentId":null,"source":"cli","messageCount":76,"inputTokens":964392,"outputTokens":6440,"totalTokens":970832,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":30,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260422_093509_16a89d","title":"","model":"nvidia/nemotron-3-super-120b-a12b","startedAt":1776850509.1223092,"parentId":null,"source":"cli","messageCount":9,"inputTokens":97816,"outputTokens":4692,"totalTokens":102508,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260421_085206_1d46cd","title":"","model":"gemma-4-31b-it","startedAt":1776761526.742268,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260417_215810_f974a3","title":"<thought>* User asks for the URL of a \"wallet scanner live dashboard\". ...","model":"gemma-4-31b-it","startedAt":1776463605.2162488,"parentId":null,"source":"cli","messageCount":148,"inputTokens":732135,"outputTokens":10128,"totalTokens":742263,"cacheRead":2586110,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":68,"apiCallCount":0,"platform":"cli","children":[]}],"metrics":{"cpu":29.9,"memTotal":25139523584,"memUsed":8760672256,"memPercent":34.8,"diskTotal":56084717568,"diskUsed":54823432192,"diskPercent":97.8,"netBytesSent":31436536472,"netBytesRecv":28172811151,"agentProcesses":{"python3":[{"pid":293,"cpu":3.2,"mem":0.7,"cmd":"/lsiopy/bin/python3 /lsiopy/bin/selkies --addr=localhost --mode=websockets"},{"pid":82153,"cpu":0.1,"mem":0.2,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":82176,"cpu":0,"mem":0.11,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":83930,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":83950,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":311873,"cpu":0,"mem":0.34,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":456932,"cpu":0,"mem":0.08,"cmd":"python3 -m http.server 8099 --directory /config/brain/dashboard"},{"pid":464517,"cpu":0.1,"mem":0.64,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":464535,"cpu":0,"mem":0.34,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":733001,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":733018,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":800531,"cpu":0.1,"mem":1.25,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":800541,"cpu":0,"mem":0.15,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1081528,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1081546,"cpu":0,"mem":0.15,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1083274,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1083305,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1523861,"cpu":0.1,"mem":1.55,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":1523873,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1624413,"cpu":0,"mem":0.02,"cmd":"/usr/bin/bash -lic set +m; cd /config/brain && python3 brain_ws_server.py"},{"pid":1624417,"cpu":0.1,"mem":0.48,"cmd":"python3 brain_ws_server.py"},{"pid":1660803,"cpu":0,"mem":0.01,"cmd":"/bin/sh -c /usr/bin/python3 /config/scripts/brain_scribe.py >> /config/scripts/brain_scribe.log 2>&1"},{"pid":1660808,"cpu":0,"mem":0.22,"cmd":"/usr/bin/python3 /config/scripts/brain_scribe.py"},{"pid":1660939,"cpu":0,"mem":0.02,"cmd":"/usr/bin/bash -c source /tmp/hermes-snap-0031607f8584.sh >/dev/null 2>&1 || true\nbuiltin cd -- /conf"},{"pid":1660941,"cpu":0,"mem":0.09,"cmd":"python3 build.py"},{"pid":1851352,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1851371,"cpu":0,"mem":0.16,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":3136387,"cpu":0.1,"mem":0.6,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":3136404,"cpu":0,"mem":0.22,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"}],"hermes":[{"pid":82153,"cpu":0.1,"mem":0.2,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":83930,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":311848,"cpu":0.9,"mem":2.17,"cmd":"/config/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace"},{"pid":371769,"cpu":0,"mem":3.0,"cmd":"node /config/.hermes/lsp/bin/pyright-langserver --stdio"},{"pid":464517,"cpu":0.1,"mem":0.64,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":733001,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":800531,"cpu":0.1,"mem":1.25,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":1081528,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1083274,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1523861,"cpu":0.1,"mem":1.55,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":1660939,"cpu":0,"mem":0.02,"cmd":"/usr/bin/bash -c source /tmp/hermes-snap-0031607f8584.sh >/dev/null 2>&1 || true\nbuiltin cd -- /conf"},{"pid":1851352,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":3136387,"cpu":0.1,"mem":0.6,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":3788773,"cpu":0,"mem":0.01,"cmd":"/bin/bash /usr/bin/brave-browser-stable /config/.hermes/image_cache/img_c0aefb1294a6.jpg"},{"pid":3788782,"cpu":0.2,"mem":1.62,"cmd":"/opt/brave.com/brave/brave /config/.hermes/image_cache/img_c0aefb1294a6.jpg"}],"gemini":[{"pid":83748,"cpu":0,"mem":0.14,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":83759,"cpu":0,"mem":0.24,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":299447,"cpu":0,"mem":0.52,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":299466,"cpu":0,"mem":3.75,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":732923,"cpu":0,"mem":0.14,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":732935,"cpu":0,"mem":2.74,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":1081499,"cpu":0,"mem":0.21,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":1083208,"cpu":0,"mem":0.21,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":1290398,"cpu":0,"mem":0.01,"cmd":"/usr/bin/bash -c shopt -u promptvars nullglob extglob nocaseglob dotglob; (\ncd /config/FreeBuff-brid"},{"pid":1851266,"cpu":0,"mem":0.14,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":1851278,"cpu":0,"mem":1.23,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"}],"jcode":[{"pid":93889,"cpu":0,"mem":0.2,"cmd":"/config/.jcode/builds/stable/jcode --provider auto serve"},{"pid":913286,"cpu":0.1,"mem":0.14,"cmd":"jcode"}],"codebuff":[{"pid":209651,"cpu":0,"mem":0.29,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/codebuff"},{"pid":209716,"cpu":10.5,"mem":1.48,"cmd":"/config/.config/manicode/codebuff"}]},"ts":1779303621.584727},"stats":{"None|telegram":{"model":"unknown","source":"telegram","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"anthropic/claude-3.5-sonnet|cli":{"model":"anthropic/claude-3.5-sonnet","source":"cli","totalSessions":3,"activeSessions":3,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"anthropic/claude-sonnet-4-20250514|cli":{"model":"anthropic/claude-sonnet-4-20250514","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"claude-sonnet-4|cron":{"model":"claude-sonnet-4","source":"cron","totalSessions":55,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":55,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"claude-sonnet-4-20250529|cli":{"model":"claude-sonnet-4-20250529","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"deepseek-ai/deepseek-v4-pro|cli":{"model":"deepseek-ai/deepseek-v4-pro","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":3993547,"totalOutputTokens":49102,"totalMessages":113,"totalToolCalls":59,"subagentCount":0,"totalCostUsd":0.0},"deepseek/deepseek-v4-flash|cli":{"model":"deepseek/deepseek-v4-flash","source":"cli","totalSessions":12,"activeSessions":12,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":12,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"freebuff-bridge|cli":{"model":"freebuff-bridge","source":"cli","totalSessions":3,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":3,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"freebuff-minimax|cli":{"model":"freebuff-minimax","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"freebuff-minimax/minimax/minimax-m2.7|cli":{"model":"freebuff-minimax/minimax/minimax-m2.7","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"gemini-2.0-flash|cli":{"model":"gemini-2.0-flash","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"gemini-2.5-flash|cron":{"model":"gemini-2.5-flash","source":"cron","totalSessions":255,"activeSessions":1,"totalInputTokens":1322834,"totalOutputTokens":91372,"totalMessages":855,"totalToolCalls":334,"subagentCount":0,"totalCostUsd":0.0},"gemini-2.5-flash-lite|cli":{"model":"gemini-2.5-flash-lite","source":"cli","totalSessions":4,"activeSessions":3,"totalInputTokens":11318,"totalOutputTokens":3962,"totalMessages":18,"totalToolCalls":9,"subagentCount":4,"totalCostUsd":0.0},"gemini-2.5-flash-lite|telegram":{"model":"gemini-2.5-flash-lite","source":"telegram","totalSessions":1,"activeSessions":0,"totalInputTokens":176444,"totalOutputTokens":13559,"totalMessages":157,"totalToolCalls":59,"subagentCount":0,"totalCostUsd":0.0},"gemini-3-flash-preview|cli":{"model":"gemini-3-flash-preview","source":"cli","totalSessions":3,"activeSessions":0,"totalInputTokens":154492,"totalOutputTokens":230,"totalMessages":13,"totalToolCalls":5,"subagentCount":3,"totalCostUsd":0.0},"gemma-4-31b-it|cli":{"model":"gemma-4-31b-it","source":"cli","totalSessions":57,"activeSessions":17,"totalInputTokens":30372308,"totalOutputTokens":282979,"totalMessages":3583,"totalToolCalls":1487,"subagentCount":44,"totalCostUsd":0.0},"gemma-4-31b-it|cron":{"model":"gemma-4-31b-it","source":"cron","totalSessions":329,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":3539,"totalToolCalls":1652,"subagentCount":0,"totalCostUsd":0.0},"gemma-4-31b-it|telegram":{"model":"gemma-4-31b-it","source":"telegram","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":14,"totalToolCalls":0,"subagentCount":2,"totalCostUsd":0.0},"gemma4-31B|cli":{"model":"gemma4-31B","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"gemma4-31b-it|cli":{"model":"gemma4-31b-it","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"glm-5.1:cloud|cli":{"model":"glm-5.1:cloud","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":17234926,"totalOutputTokens":97367,"totalMessages":462,"totalToolCalls":234,"subagentCount":1,"totalCostUsd":0.0},"google/gemini-2.5-flash|cron":{"model":"google/gemini-2.5-flash","source":"cron","totalSessions":111,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":111,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"google/gemma-4-31b-it|cli":{"model":"google/gemma-4-31b-it","source":"cli","totalSessions":2,"activeSessions":0,"totalInputTokens":4285461,"totalOutputTokens":38788,"totalMessages":225,"totalToolCalls":78,"subagentCount":0,"totalCostUsd":0.0},"google/gemma-4-31b-it|cron":{"model":"google/gemma-4-31b-it","source":"cron","totalSessions":51,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":51,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"grok-2-1212|cli":{"model":"grok-2-1212","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"grok-4-fast|cli":{"model":"grok-4-fast","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"groq/compound|cli":{"model":"groq/compound","source":"cli","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":2,"totalCostUsd":0.0},"hy3-preview-free|cli":{"model":"hy3-preview-free","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":29231,"totalOutputTokens":1584,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"llama-3.1-8b-instant|cli":{"model":"llama-3.1-8b-instant","source":"cli","totalSessions":4,"activeSessions":0,"totalInputTokens":147416,"totalOutputTokens":467,"totalMessages":22,"totalToolCalls":2,"subagentCount":3,"totalCostUsd":0.0},"llama-3.1-8b-instant|telegram":{"model":"llama-3.1-8b-instant","source":"telegram","totalSessions":2,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":2,"totalCostUsd":0.0},"llama-3.3-70b-versatile|cli":{"model":"llama-3.3-70b-versatile","source":"cli","totalSessions":8,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":12,"totalToolCalls":0,"subagentCount":8,"totalCostUsd":0.0},"meta-llama/llama-4-scout-17b-16e-instruct|cli":{"model":"meta-llama/llama-4-scout-17b-16e-instruct","source":"cli","totalSessions":2,"activeSessions":1,"totalInputTokens":23760,"totalOutputTokens":44,"totalMessages":2,"totalToolCalls":0,"subagentCount":1,"totalCostUsd":0.0},"meta/llama-3.1-8b-instruct|cli":{"model":"meta/llama-3.1-8b-instruct","source":"cli","totalSessions":3,"activeSessions":3,"totalInputTokens":23794,"totalOutputTokens":291,"totalMessages":17,"totalToolCalls":6,"subagentCount":0,"totalCostUsd":0.0},"meta/llama-4-maverick-17b-128e-instruct|telegram":{"model":"meta/llama-4-maverick-17b-128e-instruct","source":"telegram","totalSessions":1,"activeSessions":0,"totalInputTokens":744988,"totalOutputTokens":3514,"totalMessages":90,"totalToolCalls":36,"subagentCount":1,"totalCostUsd":0.0},"minimax-m2.5-free|cli":{"model":"minimax-m2.5-free","source":"cli","totalSessions":192,"activeSessions":54,"totalInputTokens":27690700,"totalOutputTokens":1890144,"totalMessages":20095,"totalToolCalls":9416,"subagentCount":170,"totalCostUsd":0.0},"minimax-m2.5-free|cron":{"model":"minimax-m2.5-free","source":"cron","totalSessions":211,"activeSessions":0,"totalInputTokens":696947,"totalOutputTokens":16464,"totalMessages":454,"totalToolCalls":83,"subagentCount":0,"totalCostUsd":0.0},"minimax-m2.5-free|telegram":{"model":"minimax-m2.5-free","source":"telegram","totalSessions":68,"activeSessions":15,"totalInputTokens":10684449,"totalOutputTokens":844354,"totalMessages":6401,"totalToolCalls":3030,"subagentCount":63,"totalCostUsd":0.0},"minimax-m2.7|cli":{"model":"minimax-m2.7","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":9,"totalToolCalls":3,"subagentCount":1,"totalCostUsd":0.0},"minimax/minimax-m2.7|cli":{"model":"minimax/minimax-m2.7","source":"cli","totalSessions":7,"activeSessions":7,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":12,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"minimaxai/minimax-m2.5|cli":{"model":"minimaxai/minimax-m2.5","source":"cli","totalSessions":18,"activeSessions":9,"totalInputTokens":25847412,"totalOutputTokens":207866,"totalMessages":1768,"totalToolCalls":735,"subagentCount":11,"totalCostUsd":0.0},"minimaxai/minimax-m2.7|cli":{"model":"minimaxai/minimax-m2.7","source":"cli","totalSessions":6,"activeSessions":1,"totalInputTokens":17036555,"totalOutputTokens":107288,"totalMessages":778,"totalToolCalls":395,"subagentCount":4,"totalCostUsd":0.0},"moonshotai/kimi-k2.5|cli":{"model":"moonshotai/kimi-k2.5","source":"cli","totalSessions":17,"activeSessions":2,"totalInputTokens":52582742,"totalOutputTokens":426199,"totalMessages":2143,"totalToolCalls":1107,"subagentCount":8,"totalCostUsd":0.0},"moonshotai/kimi-k2.5|telegram":{"model":"moonshotai/kimi-k2.5","source":"telegram","totalSessions":1,"activeSessions":0,"totalInputTokens":3983298,"totalOutputTokens":23169,"totalMessages":206,"totalToolCalls":117,"subagentCount":0,"totalCostUsd":0.0},"moonshotai/kimi-k2.6|telegram":{"model":"moonshotai/kimi-k2.6","source":"telegram","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":3,"totalToolCalls":0,"subagentCount":1,"totalCostUsd":0.0},"nvidia/llama-3.1-nemotron-70b-instruct|cli":{"model":"nvidia/llama-3.1-nemotron-70b-instruct","source":"cli","totalSessions":2,"activeSessions":2,"totalInputTokens":2676,"totalOutputTokens":15,"totalMessages":4,"totalToolCalls":1,"subagentCount":0,"totalCostUsd":0.0},"nvidia/nemotron-3-super-120b-a12b|cli":{"model":"nvidia/nemotron-3-super-120b-a12b","source":"cli","totalSessions":2,"activeSessions":1,"totalInputTokens":148256,"totalOutputTokens":7930,"totalMessages":14,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"openai/gpt-oss-120b|cli":{"model":"openai/gpt-oss-120b","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":1,"totalCostUsd":0.0},"openrouter/anthropic/claude-3.5-sonnet|cli":{"model":"openrouter/anthropic/claude-3.5-sonnet","source":"cli","totalSessions":2,"activeSessions":2,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"openrouter/anthropic/claude-sonnet-4-20250529|cli":{"model":"openrouter/anthropic/claude-sonnet-4-20250529","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"qwen/qwen3-32b|cli":{"model":"qwen/qwen3-32b","source":"cli","totalSessions":2,"activeSessions":0,"totalInputTokens":84147,"totalOutputTokens":5729,"totalMessages":64,"totalToolCalls":25,"subagentCount":2,"totalCostUsd":0.0},"qwen3.6-plus-free|cron":{"model":"qwen3.6-plus-free","source":"cron","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"xai/grok-2-1212|cli":{"model":"xai/grok-2-1212","source":"cli","totalSessions":2,"activeSessions":2,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"z-ai/glm-5.1|cli":{"model":"z-ai/glm-5.1","source":"cli","totalSessions":2,"activeSessions":1,"totalInputTokens":1069810,"totalOutputTokens":5170,"totalMessages":196,"totalToolCalls":98,"subagentCount":1,"totalCostUsd":0.0},"z-ai/glm-5.1|telegram":{"model":"z-ai/glm-5.1","source":"telegram","totalSessions":88,"activeSessions":20,"totalInputTokens":114038011,"totalOutputTokens":781338,"totalMessages":6177,"totalToolCalls":2902,"subagentCount":88,"totalCostUsd":0.0},"z-ai/glm5|cli":{"model":"z-ai/glm5","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":35,"totalToolCalls":16,"subagentCount":1,"totalCostUsd":0.0},"~anthropic/claude-sonnet-latest|cli":{"model":"~anthropic/claude-sonnet-latest","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0}}}) ═══
+var EMBEDDED=null;
+try{EMBEDDED=JSON.parse('{"agents":{"hermes":{"name":"hermes","type":"orchestrator","color":"#4FC3F7","icon":"\ud83e\udde0","installed":true,"running":true,"path":"/config/.local/bin/hermes"},"claude":{"name":"claude","type":"coder","color":"#F59E0B","icon":"\ud83d\udfe1","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/claude"},"gemini":{"name":"gemini","type":"coder","color":"#34D399","icon":"\ud83d\udfe2","installed":true,"running":true,"path":"/config/.nvm/versions/node/v20.20.0/bin/gemini"},"kilo":{"name":"kilo","type":"coder","color":"#A78BFA","icon":"\ud83d\udfe3","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/kilo"},"kimi":{"name":"kimi","type":"coder","color":"#FB923C","icon":"\ud83d\udfe0","installed":true,"running":false,"path":"/config/.local/bin/kimi"},"codex":{"name":"codex","type":"coder","color":"#38BDF8","icon":"\ud83d\udd35","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/codex"},"opencode":{"name":"opencode","type":"coder","color":"#2DD4BF","icon":"\ud83c\udf0a","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/opencode"},"qwen":{"name":"qwen","type":"coder","color":"#F472B6","icon":"\ud83e\ude77","installed":true,"running":false,"path":"/config/.nvm/versions/node/v20.20.0/bin/qwen"},"roo":{"name":"roo","type":"coder","color":"#EF4444","icon":"\ud83d\udd34","installed":true,"running":false,"path":"/config/.local/bin/roo"},"nullclaw":{"name":"nullclaw","type":"router","color":"#8B5CF6","icon":"\ud83d\udd2e","installed":true,"running":false,"path":"/config/.local/bin/nullclaw"},"gptme":{"name":"gptme","type":"coder","color":"#06B6D4","icon":"\ud83d\udc8e","installed":true,"running":false,"path":"/config/.local/bin/gptme"},"jcode":{"name":"jcode","type":"coder","color":"#10B981","icon":"\u2705","installed":true,"running":true,"path":"/config/.local/bin/jcode"},"codebuff":{"name":"codebuff","type":"coder","color":"#FBBF24","icon":"\u26a1","installed":true,"running":true,"path":"/config/.nvm/versions/node/v20.20.0/bin/codebuff"},"goose":{"name":"goose","type":"coder","color":"#F97316","icon":"\ud83e\udd86","installed":true,"running":false,"path":"/config/.local/bin/goose"},"codel":{"name":"codel","type":"coder","color":"#A3E635","icon":"\ud83d\udcbb","installed":false,"running":false,"path":""}},"brain":{"semanticCortex":{"status":"active","vectorCount":1},"knowledgeGraph":{"status":"active","nodes":104,"edges":52},"episodicMemory":{"status":"active","episodes":262},"workingMemory":{"status":"active","keys":0},"driveSync":{"status":"connected","files":20,"totalSize":178275}},"tree":[{"id":"20260519_221211_2e88d7","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228731.7840846,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221152_e6ce73","title":"","model":"z-ai/glm-5.1","startedAt":1779228713.0940537,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221119_da4e3b","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228679.4016793,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221104_9c5cfa","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228664.3837824,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_221041_4af6ba","title":"","model":"minimax/minimax-m2.7","startedAt":1779228641.8787706,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_220229_7857fd","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779228150.1070738,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260519_220110_428c72","title":"","model":"minimax/minimax-m2.7","startedAt":1779228070.6888702,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_071111_851ff7","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779088271.8449917,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_070517_de8f58","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779087918.2022266,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_065115_8acd74","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779087075.9027123,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_065057_e94e67","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779087057.334957,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_064956_e2eab8","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086996.6757035,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_064806_75c1ba","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086886.9750814,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_064719_e2559d","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086839.4889133,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_063937_4e7c59","title":"","model":"deepseek/deepseek-v4-flash","startedAt":1779086377.9870613,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_062812_26ab9c","title":"","model":"minimax/minimax-m2.7","startedAt":1779085693.2984257,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_062719_499183","title":"","model":"minimax/minimax-m2.7","startedAt":1779085639.9681532,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_062244_e47dbf","title":"","model":"freebuff-bridge","startedAt":1779085378.8128998,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_061002_5df22d","title":"","model":"minimax/minimax-m2.7","startedAt":1779084603.2750342,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_060704_22a245","title":"","model":"minimax/minimax-m2.7","startedAt":1779084425.218675,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_060650_75c0b5","title":"","model":"freebuff-minimax","startedAt":1779084410.4198735,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_060633_b37e61","title":"","model":"freebuff-minimax/minimax/minimax-m2.7","startedAt":1779084394.1483924,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_054113_4ef935","title":"","model":"minimax/minimax-m2.7","startedAt":1779082873.4882407,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260518_010417_b453f2","title":"","model":"~anthropic/claude-sonnet-latest","startedAt":1779066257.4211292,"parentId":null,"source":"cli","messageCount":2,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260516_173040_c0be20","title":"","model":"gemini-2.0-flash","startedAt":1778952641.619006,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260516_173016_4bddee","title":"","model":"anthropic/claude-sonnet-4-20250514","startedAt":1778952617.7228394,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260510_051203_6d4120","title":"New Conversation","model":"minimax-m2.5-free","startedAt":1778390113.5521755,"parentId":null,"source":"cli","messageCount":2,"inputTokens":18810,"outputTokens":21,"totalTokens":18831,"cacheRead":443,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260510_045552_52dde8","title":"","model":"minimax-m2.5-free","startedAt":1778388968.7554302,"parentId":null,"source":"cli","messageCount":2,"inputTokens":17032,"outputTokens":92,"totalTokens":17124,"cacheRead":443,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260427_195129_c97b8e","title":"Finding OSINT Tools for Private Information Gathering","model":"minimaxai/minimax-m2.5","startedAt":1777319838.6534605,"parentId":null,"source":"cli","messageCount":15,"inputTokens":185904,"outputTokens":3285,"totalTokens":189189,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":6,"apiCallCount":7,"platform":"cli","children":[]},{"id":"20260427_092917_fcf13a","title":"Scrapling Instagram Profile Access","model":"minimaxai/minimax-m2.5","startedAt":1777282673.1556072,"parentId":null,"source":"cli","messageCount":82,"inputTokens":2005090,"outputTokens":20708,"totalTokens":2025798,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":37,"apiCallCount":41,"platform":"cli","children":[]},{"id":"cron_cc79ab1d20cd_20260427_083708","title":"","model":"gemini-2.5-flash","startedAt":1777279046.828788,"parentId":null,"source":"cron","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cron","children":[]},{"id":"20260427_010901_ca71f3","title":"Instagram Scraping Without API","model":"minimaxai/minimax-m2.5","startedAt":1777254098.414822,"parentId":null,"source":"cli","messageCount":36,"inputTokens":397055,"outputTokens":5691,"totalTokens":402746,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":17,"apiCallCount":18,"platform":"cli","children":[]},{"id":"20260425_213651_d33a5f","title":"","model":"xai/grok-2-1212","startedAt":1777153011.8645866,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_213542_ecd6f6","title":"","model":"xai/grok-2-1212","startedAt":1777152943.3036664,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_213440_72855d","title":"","model":"nvidia/llama-3.1-nemotron-70b-instruct","startedAt":1777152881.2360358,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_210658_54e81d","title":"","model":"nvidia/llama-3.1-nemotron-70b-instruct","startedAt":1777151218.9114895,"parentId":null,"source":"cli","messageCount":3,"inputTokens":2676,"outputTokens":15,"totalTokens":2691,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":1,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260425_210614_7cd525","title":"","model":"meta/llama-3.1-8b-instruct","startedAt":1777151174.357842,"parentId":null,"source":"cli","messageCount":12,"inputTokens":5208,"outputTokens":235,"totalTokens":5443,"cacheRead":20000,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":5,"apiCallCount":6,"platform":"cli","children":[]},{"id":"20260425_210539_3ad1b4","title":"","model":"meta/llama-3.1-8b-instruct","startedAt":1777151139.6211824,"parentId":null,"source":"cli","messageCount":4,"inputTokens":18586,"outputTokens":56,"totalTokens":18642,"cacheRead":18480,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":1,"apiCallCount":2,"platform":"cli","children":[]},{"id":"20260425_210505_c97cc3","title":"","model":"meta/llama-3.1-8b-instruct","startedAt":1777151106.6109042,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_192101_4542f0","title":"","model":"anthropic/claude-3.5-sonnet","startedAt":1777144866.8993075,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_191242_337f9b","title":"","model":"anthropic/claude-3.5-sonnet","startedAt":1777144366.9840877,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_191131_dbde03","title":"","model":"minimax-m2.5-free","startedAt":1777144296.4924328,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_190946_611fd7","title":"","model":"minimax-m2.5-free","startedAt":1777144191.1479058,"parentId":null,"source":"cli","messageCount":2,"inputTokens":15795,"outputTokens":10,"totalTokens":15805,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":1,"platform":"cli","children":[]},{"id":"20260425_190821_a4fd1d","title":"","model":"anthropic/claude-3.5-sonnet","startedAt":1777144106.0789564,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_190716_1eb465","title":"","model":"minimax-m2.5-free","startedAt":1777144041.5417936,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_190619_10251c","title":"","model":"minimax-m2.5-free","startedAt":1777143984.6340492,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_185348_368b5a","title":"","model":"claude-sonnet-4-20250529","startedAt":1777143235.9437335,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_120658_1c7cb2","title":"","model":"openrouter/anthropic/claude-3.5-sonnet","startedAt":1777118819.3695815,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_120559_f45293","title":"","model":"openrouter/anthropic/claude-sonnet-4-20250529","startedAt":1777118760.6603925,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260425_120527_82675e","title":"","model":"openrouter/anthropic/claude-3.5-sonnet","startedAt":1777118728.935099,"parentId":null,"source":"cli","messageCount":1,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260424_031547_4e1c99","title":"New Wallets Found Last 24 Hours","model":"gemma-4-31b-it","startedAt":1777001497.3111498,"parentId":null,"source":"cli","messageCount":80,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":32,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260422_212054_7207ed","title":"","model":"gemma4-31B","startedAt":1776892867.9150949,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260422_090721_4f69d1","title":"","model":"moonshotai/kimi-k2.5","startedAt":1776850602.9850743,"parentId":null,"source":"cli","messageCount":76,"inputTokens":964392,"outputTokens":6440,"totalTokens":970832,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":30,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260422_093509_16a89d","title":"","model":"nvidia/nemotron-3-super-120b-a12b","startedAt":1776850509.1223092,"parentId":null,"source":"cli","messageCount":9,"inputTokens":97816,"outputTokens":4692,"totalTokens":102508,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260421_085206_1d46cd","title":"","model":"gemma-4-31b-it","startedAt":1776761526.742268,"parentId":null,"source":"cli","messageCount":0,"inputTokens":0,"outputTokens":0,"totalTokens":0,"cacheRead":0,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":0,"apiCallCount":0,"platform":"cli","children":[]},{"id":"20260417_215810_f974a3","title":"<thought>* User asks for the URL of a \"wallet scanner live dashboard\". ...","model":"gemma-4-31b-it","startedAt":1776463605.2162488,"parentId":null,"source":"cli","messageCount":148,"inputTokens":732135,"outputTokens":10128,"totalTokens":742263,"cacheRead":2586110,"cacheWrite":0,"reasoning":0,"costUsd":0.0,"toolCallCount":68,"apiCallCount":0,"platform":"cli","children":[]}],"metrics":{"cpu":29.9,"memTotal":25139523584,"memUsed":8760672256,"memPercent":34.8,"diskTotal":56084717568,"diskUsed":54823432192,"diskPercent":97.8,"netBytesSent":31436536472,"netBytesRecv":28172811151,"agentProcesses":{"python3":[{"pid":293,"cpu":3.2,"mem":0.7,"cmd":"/lsiopy/bin/python3 /lsiopy/bin/selkies --addr=localhost --mode=websockets"},{"pid":82153,"cpu":0.1,"mem":0.2,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":82176,"cpu":0,"mem":0.11,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":83930,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":83950,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":311873,"cpu":0,"mem":0.34,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":456932,"cpu":0,"mem":0.08,"cmd":"python3 -m http.server 8099 --directory /config/brain/dashboard"},{"pid":464517,"cpu":0.1,"mem":0.64,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":464535,"cpu":0,"mem":0.34,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":733001,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":733018,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":800531,"cpu":0.1,"mem":1.25,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":800541,"cpu":0,"mem":0.15,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1081528,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1081546,"cpu":0,"mem":0.15,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1083274,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1083305,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1523861,"cpu":0.1,"mem":1.55,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":1523873,"cpu":0,"mem":0.14,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":1624413,"cpu":0,"mem":0.02,"cmd":"/usr/bin/bash -lic set +m; cd /config/brain && python3 brain_ws_server.py"},{"pid":1624417,"cpu":0.1,"mem":0.48,"cmd":"python3 brain_ws_server.py"},{"pid":1660803,"cpu":0,"mem":0.01,"cmd":"/bin/sh -c /usr/bin/python3 /config/scripts/brain_scribe.py >> /config/scripts/brain_scribe.log 2>&1"},{"pid":1660808,"cpu":0,"mem":0.22,"cmd":"/usr/bin/python3 /config/scripts/brain_scribe.py"},{"pid":1660939,"cpu":0,"mem":0.02,"cmd":"/usr/bin/bash -c source /tmp/hermes-snap-0031607f8584.sh >/dev/null 2>&1 || true\nbuiltin cd -- /conf"},{"pid":1660941,"cpu":0,"mem":0.09,"cmd":"python3 build.py"},{"pid":1851352,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1851371,"cpu":0,"mem":0.16,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"},{"pid":3136387,"cpu":0.1,"mem":0.6,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":3136404,"cpu":0,"mem":0.22,"cmd":"/lsiopy/bin/python3 /config/.local/bin/google-colab-mcp --config /config/.mcp-colab/server_config.js"}],"hermes":[{"pid":82153,"cpu":0.1,"mem":0.2,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":83930,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":311848,"cpu":0.9,"mem":2.17,"cmd":"/config/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace"},{"pid":371769,"cpu":0,"mem":3.0,"cmd":"node /config/.hermes/lsp/bin/pyright-langserver --stdio"},{"pid":464517,"cpu":0.1,"mem":0.64,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":733001,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":800531,"cpu":0.1,"mem":1.25,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":1081528,"cpu":0.1,"mem":0.21,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1083274,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":1523861,"cpu":0.1,"mem":1.55,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":1660939,"cpu":0,"mem":0.02,"cmd":"/usr/bin/bash -c source /tmp/hermes-snap-0031607f8584.sh >/dev/null 2>&1 || true\nbuiltin cd -- /conf"},{"pid":1851352,"cpu":0.1,"mem":0.23,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes mcp serve"},{"pid":3136387,"cpu":0.1,"mem":0.6,"cmd":"/config/.hermes/hermes-agent/venv/bin/python3 /config/.local/bin/hermes --yolo"},{"pid":3788773,"cpu":0,"mem":0.01,"cmd":"/bin/bash /usr/bin/brave-browser-stable /config/.hermes/image_cache/img_c0aefb1294a6.jpg"},{"pid":3788782,"cpu":0.2,"mem":1.62,"cmd":"/opt/brave.com/brave/brave /config/.hermes/image_cache/img_c0aefb1294a6.jpg"}],"gemini":[{"pid":83748,"cpu":0,"mem":0.14,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":83759,"cpu":0,"mem":0.24,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":299447,"cpu":0,"mem":0.52,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":299466,"cpu":0,"mem":3.75,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":732923,"cpu":0,"mem":0.14,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":732935,"cpu":0,"mem":2.74,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":1081499,"cpu":0,"mem":0.21,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":1083208,"cpu":0,"mem":0.21,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"},{"pid":1290398,"cpu":0,"mem":0.01,"cmd":"/usr/bin/bash -c shopt -u promptvars nullglob extglob nocaseglob dotglob; (\ncd /config/FreeBuff-brid"},{"pid":1851266,"cpu":0,"mem":0.14,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/gemini --yolo"},{"pid":1851278,"cpu":0,"mem":1.23,"cmd":"/config/.nvm/versions/node/v20.20.0/bin/node --max-old-space-size=11987 /config/.nvm/versions/node/v"}],"jcode":[{"pid":93889,"cpu":0,"mem":0.2,"cmd":"/config/.jcode/builds/stable/jcode --provider auto serve"},{"pid":913286,"cpu":0.1,"mem":0.14,"cmd":"jcode"}],"codebuff":[{"pid":209651,"cpu":0,"mem":0.29,"cmd":"node /config/.nvm/versions/node/v20.20.0/bin/codebuff"},{"pid":209716,"cpu":10.5,"mem":1.48,"cmd":"/config/.config/manicode/codebuff"}]},"ts":1779303621.584727},"stats":{"None|telegram":{"model":"unknown","source":"telegram","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"anthropic/claude-3.5-sonnet|cli":{"model":"anthropic/claude-3.5-sonnet","source":"cli","totalSessions":3,"activeSessions":3,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"anthropic/claude-sonnet-4-20250514|cli":{"model":"anthropic/claude-sonnet-4-20250514","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"claude-sonnet-4|cron":{"model":"claude-sonnet-4","source":"cron","totalSessions":55,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":55,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"claude-sonnet-4-20250529|cli":{"model":"claude-sonnet-4-20250529","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"deepseek-ai/deepseek-v4-pro|cli":{"model":"deepseek-ai/deepseek-v4-pro","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":3993547,"totalOutputTokens":49102,"totalMessages":113,"totalToolCalls":59,"subagentCount":0,"totalCostUsd":0.0},"deepseek/deepseek-v4-flash|cli":{"model":"deepseek/deepseek-v4-flash","source":"cli","totalSessions":12,"activeSessions":12,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":12,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"freebuff-bridge|cli":{"model":"freebuff-bridge","source":"cli","totalSessions":3,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":3,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"freebuff-minimax|cli":{"model":"freebuff-minimax","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"freebuff-minimax/minimax/minimax-m2.7|cli":{"model":"freebuff-minimax/minimax/minimax-m2.7","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"gemini-2.0-flash|cli":{"model":"gemini-2.0-flash","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"gemini-2.5-flash|cron":{"model":"gemini-2.5-flash","source":"cron","totalSessions":255,"activeSessions":1,"totalInputTokens":1322834,"totalOutputTokens":91372,"totalMessages":855,"totalToolCalls":334,"subagentCount":0,"totalCostUsd":0.0},"gemini-2.5-flash-lite|cli":{"model":"gemini-2.5-flash-lite","source":"cli","totalSessions":4,"activeSessions":3,"totalInputTokens":11318,"totalOutputTokens":3962,"totalMessages":18,"totalToolCalls":9,"subagentCount":4,"totalCostUsd":0.0},"gemini-2.5-flash-lite|telegram":{"model":"gemini-2.5-flash-lite","source":"telegram","totalSessions":1,"activeSessions":0,"totalInputTokens":176444,"totalOutputTokens":13559,"totalMessages":157,"totalToolCalls":59,"subagentCount":0,"totalCostUsd":0.0},"gemini-3-flash-preview|cli":{"model":"gemini-3-flash-preview","source":"cli","totalSessions":3,"activeSessions":0,"totalInputTokens":154492,"totalOutputTokens":230,"totalMessages":13,"totalToolCalls":5,"subagentCount":3,"totalCostUsd":0.0},"gemma-4-31b-it|cli":{"model":"gemma-4-31b-it","source":"cli","totalSessions":57,"activeSessions":17,"totalInputTokens":30372308,"totalOutputTokens":282979,"totalMessages":3583,"totalToolCalls":1487,"subagentCount":44,"totalCostUsd":0.0},"gemma-4-31b-it|cron":{"model":"gemma-4-31b-it","source":"cron","totalSessions":329,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":3539,"totalToolCalls":1652,"subagentCount":0,"totalCostUsd":0.0},"gemma-4-31b-it|telegram":{"model":"gemma-4-31b-it","source":"telegram","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":14,"totalToolCalls":0,"subagentCount":2,"totalCostUsd":0.0},"gemma4-31B|cli":{"model":"gemma4-31B","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"gemma4-31b-it|cli":{"model":"gemma4-31b-it","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"glm-5.1:cloud|cli":{"model":"glm-5.1:cloud","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":17234926,"totalOutputTokens":97367,"totalMessages":462,"totalToolCalls":234,"subagentCount":1,"totalCostUsd":0.0},"google/gemini-2.5-flash|cron":{"model":"google/gemini-2.5-flash","source":"cron","totalSessions":111,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":111,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"google/gemma-4-31b-it|cli":{"model":"google/gemma-4-31b-it","source":"cli","totalSessions":2,"activeSessions":0,"totalInputTokens":4285461,"totalOutputTokens":38788,"totalMessages":225,"totalToolCalls":78,"subagentCount":0,"totalCostUsd":0.0},"google/gemma-4-31b-it|cron":{"model":"google/gemma-4-31b-it","source":"cron","totalSessions":51,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":51,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"grok-2-1212|cli":{"model":"grok-2-1212","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"grok-4-fast|cli":{"model":"grok-4-fast","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"groq/compound|cli":{"model":"groq/compound","source":"cli","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":2,"totalCostUsd":0.0},"hy3-preview-free|cli":{"model":"hy3-preview-free","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":29231,"totalOutputTokens":1584,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"llama-3.1-8b-instant|cli":{"model":"llama-3.1-8b-instant","source":"cli","totalSessions":4,"activeSessions":0,"totalInputTokens":147416,"totalOutputTokens":467,"totalMessages":22,"totalToolCalls":2,"subagentCount":3,"totalCostUsd":0.0},"llama-3.1-8b-instant|telegram":{"model":"llama-3.1-8b-instant","source":"telegram","totalSessions":2,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":2,"totalCostUsd":0.0},"llama-3.3-70b-versatile|cli":{"model":"llama-3.3-70b-versatile","source":"cli","totalSessions":8,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":12,"totalToolCalls":0,"subagentCount":8,"totalCostUsd":0.0},"meta-llama/llama-4-scout-17b-16e-instruct|cli":{"model":"meta-llama/llama-4-scout-17b-16e-instruct","source":"cli","totalSessions":2,"activeSessions":1,"totalInputTokens":23760,"totalOutputTokens":44,"totalMessages":2,"totalToolCalls":0,"subagentCount":1,"totalCostUsd":0.0},"meta/llama-3.1-8b-instruct|cli":{"model":"meta/llama-3.1-8b-instruct","source":"cli","totalSessions":3,"activeSessions":3,"totalInputTokens":23794,"totalOutputTokens":291,"totalMessages":17,"totalToolCalls":6,"subagentCount":0,"totalCostUsd":0.0},"meta/llama-4-maverick-17b-128e-instruct|telegram":{"model":"meta/llama-4-maverick-17b-128e-instruct","source":"telegram","totalSessions":1,"activeSessions":0,"totalInputTokens":744988,"totalOutputTokens":3514,"totalMessages":90,"totalToolCalls":36,"subagentCount":1,"totalCostUsd":0.0},"minimax-m2.5-free|cli":{"model":"minimax-m2.5-free","source":"cli","totalSessions":192,"activeSessions":54,"totalInputTokens":27690700,"totalOutputTokens":1890144,"totalMessages":20095,"totalToolCalls":9416,"subagentCount":170,"totalCostUsd":0.0},"minimax-m2.5-free|cron":{"model":"minimax-m2.5-free","source":"cron","totalSessions":211,"activeSessions":0,"totalInputTokens":696947,"totalOutputTokens":16464,"totalMessages":454,"totalToolCalls":83,"subagentCount":0,"totalCostUsd":0.0},"minimax-m2.5-free|telegram":{"model":"minimax-m2.5-free","source":"telegram","totalSessions":68,"activeSessions":15,"totalInputTokens":10684449,"totalOutputTokens":844354,"totalMessages":6401,"totalToolCalls":3030,"subagentCount":63,"totalCostUsd":0.0},"minimax-m2.7|cli":{"model":"minimax-m2.7","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":9,"totalToolCalls":3,"subagentCount":1,"totalCostUsd":0.0},"minimax/minimax-m2.7|cli":{"model":"minimax/minimax-m2.7","source":"cli","totalSessions":7,"activeSessions":7,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":12,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"minimaxai/minimax-m2.5|cli":{"model":"minimaxai/minimax-m2.5","source":"cli","totalSessions":18,"activeSessions":9,"totalInputTokens":25847412,"totalOutputTokens":207866,"totalMessages":1768,"totalToolCalls":735,"subagentCount":11,"totalCostUsd":0.0},"minimaxai/minimax-m2.7|cli":{"model":"minimaxai/minimax-m2.7","source":"cli","totalSessions":6,"activeSessions":1,"totalInputTokens":17036555,"totalOutputTokens":107288,"totalMessages":778,"totalToolCalls":395,"subagentCount":4,"totalCostUsd":0.0},"moonshotai/kimi-k2.5|cli":{"model":"moonshotai/kimi-k2.5","source":"cli","totalSessions":17,"activeSessions":2,"totalInputTokens":52582742,"totalOutputTokens":426199,"totalMessages":2143,"totalToolCalls":1107,"subagentCount":8,"totalCostUsd":0.0},"moonshotai/kimi-k2.5|telegram":{"model":"moonshotai/kimi-k2.5","source":"telegram","totalSessions":1,"activeSessions":0,"totalInputTokens":3983298,"totalOutputTokens":23169,"totalMessages":206,"totalToolCalls":117,"subagentCount":0,"totalCostUsd":0.0},"moonshotai/kimi-k2.6|telegram":{"model":"moonshotai/kimi-k2.6","source":"telegram","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":3,"totalToolCalls":0,"subagentCount":1,"totalCostUsd":0.0},"nvidia/llama-3.1-nemotron-70b-instruct|cli":{"model":"nvidia/llama-3.1-nemotron-70b-instruct","source":"cli","totalSessions":2,"activeSessions":2,"totalInputTokens":2676,"totalOutputTokens":15,"totalMessages":4,"totalToolCalls":1,"subagentCount":0,"totalCostUsd":0.0},"nvidia/nemotron-3-super-120b-a12b|cli":{"model":"nvidia/nemotron-3-super-120b-a12b","source":"cli","totalSessions":2,"activeSessions":1,"totalInputTokens":148256,"totalOutputTokens":7930,"totalMessages":14,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"openai/gpt-oss-120b|cli":{"model":"openai/gpt-oss-120b","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":0,"totalToolCalls":0,"subagentCount":1,"totalCostUsd":0.0},"openrouter/anthropic/claude-3.5-sonnet|cli":{"model":"openrouter/anthropic/claude-3.5-sonnet","source":"cli","totalSessions":2,"activeSessions":2,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"openrouter/anthropic/claude-sonnet-4-20250529|cli":{"model":"openrouter/anthropic/claude-sonnet-4-20250529","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":1,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"qwen/qwen3-32b|cli":{"model":"qwen/qwen3-32b","source":"cli","totalSessions":2,"activeSessions":0,"totalInputTokens":84147,"totalOutputTokens":5729,"totalMessages":64,"totalToolCalls":25,"subagentCount":2,"totalCostUsd":0.0},"qwen3.6-plus-free|cron":{"model":"qwen3.6-plus-free","source":"cron","totalSessions":2,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"xai/grok-2-1212|cli":{"model":"xai/grok-2-1212","source":"cli","totalSessions":2,"activeSessions":2,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0},"z-ai/glm-5.1|cli":{"model":"z-ai/glm-5.1","source":"cli","totalSessions":2,"activeSessions":1,"totalInputTokens":1069810,"totalOutputTokens":5170,"totalMessages":196,"totalToolCalls":98,"subagentCount":1,"totalCostUsd":0.0},"z-ai/glm-5.1|telegram":{"model":"z-ai/glm-5.1","source":"telegram","totalSessions":88,"activeSessions":20,"totalInputTokens":114038011,"totalOutputTokens":781338,"totalMessages":6177,"totalToolCalls":2902,"subagentCount":88,"totalCostUsd":0.0},"z-ai/glm5|cli":{"model":"z-ai/glm5","source":"cli","totalSessions":1,"activeSessions":0,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":35,"totalToolCalls":16,"subagentCount":1,"totalCostUsd":0.0},"~anthropic/claude-sonnet-latest|cli":{"model":"~anthropic/claude-sonnet-latest","source":"cli","totalSessions":1,"activeSessions":1,"totalInputTokens":0,"totalOutputTokens":0,"totalMessages":2,"totalToolCalls":0,"subagentCount":0,"totalCostUsd":0.0}}}');}catch(e){}
+
+// ═══ BRAIN REGIONS MAP ═══
 var BRAIN_REGIONS={
-semantic:{name:"Semantic Cortex",backend:"FAISS int8",color:"#00f5ff",desc:"Long-term semantic memory store. Vector embeddings for concept retrieval. FAISS int8 quantization = 4x RAM savings.",fns:["Vector embedding","Similarity search","Concept retrieval","TF-IDF fallback"]},
-graph:{name:"Knowledge Graph",backend:"NetworkX + GraphML",color:"#00ff9d",desc:"Relational knowledge store. Maps connections between concepts, agents, and processes. Multi-hop reasoning.",fns:["Entity relationships","Graph traversal","Multi-hop reasoning","Agent dependency mapping"]},
-episodic:{name:"Episodic Memory",backend:"SQLite",color:"#f59e0b",desc:"Time-stamped episode storage. Records what happened, when, which agent. Pattern detection across time.",fns:["Event logging","Chronological recall","Agent activity history","Pattern detection"]},
-working:{name:"Working Memory",backend:"Redis 6379",color:"#ff2d55",desc:"Short-term high-speed scratchpad. Active task context, agent states, real-time coordination. TTL 1hr.",fns:["Active task context","Agent state tracking","Real-time coordination","Session management"]},
-procedural:{name:"Procedural Cortex",backend:"Skills (SKILL.md)",color:"#8b5cf6",desc:"Learned procedures and workflows. Reusable skills, code patterns, operational knowledge. Auto-load per task.",fns:["Skill storage","Workflow patterns","Code templates","Auto-skill loading"]},
-sensory:{name:"Sensory Buffer",backend:"File Watcher",color:"#ff6b35",desc:"Short-term input buffer. Watches filesystem for new files, changes. Auto-ingests into brain regions.",fns:["File change detection","New file ingestion","Event buffering","Trigger cascading updates"]}
+semantic:{name:'Semantic Cortex',color:'#00f0ff',backend:'FAISS',desc:'High-dimensional vector search & similarity retrieval'},
+graph:{name:'Knowledge Graph',color:'#a855f7',backend:'NetworkX',desc:'Entity relationships & graph traversal'},
+episodic:{name:'Memory Hippocampus',color:'#00ff88',backend:'SQLite',desc:'Episodic memory & temporal recall'},
+working:{name:'Working Memory',color:'#fbbf24',backend:'Redis',desc:'Short-term state & session buffers'},
+procedural:{name:'Procedural Cortex',color:'#fb923c',backend:'Skills',desc:'Learned procedures & workflows'},
+sensory:{name:'Sensory Buffer',color:'#38bdf8',backend:'FileWatcher',desc:'Real-time file & event ingestion'},
+drive:{name:'Drive Sync',color:'#34d399',backend:'rclone',desc:'Google Drive cloud persistence'}
 };
 
 // ═══ TAB NAVIGATION ═══
 document.querySelectorAll('.tab').forEach(function(t){
 t.onclick=function(){
 document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('visible')});
 t.classList.add('on');
 currentTab=t.dataset.tab;
-document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('visible')});
 document.getElementById('panel-'+currentTab).classList.add('visible');
 if(currentTab==='agents')renderAgentGrid();
-if(currentTab==='backtest')renderBacktest();
+if(currentTab==='sessions')renderSessionTree();
 if(currentTab==='brain')renderBrainRegions();
+if(currentTab==='system')renderSystem();
 };
 });
 
-// ═══ 3D INIT ═══
-function init(){
+// ═══ SIDE PANEL TOGGLE ═══
+document.getElementById('side-toggle').onclick=function(){
+var sp=document.getElementById('side-panel');
+sp.classList.toggle('collapsed');
+this.textContent=sp.classList.contains('collapsed')?'▶':'◀';
+};
+
+// ═══ SESSION DETAIL CLOSE ═══
+document.getElementById('sd-close').onclick=function(){
+document.getElementById('session-detail').classList.remove('open');
+selectedSessionId=null;
+};
+
+// ═══ SCAN BUTTON ═══
+document.getElementById('scan-btn').onclick=function(){loadAll();addEvent('USR','Manual scan triggered','system');};
+
+// ═══ THREE.JS INIT ═══
+function init3D(){
+var gl=document.getElementById('gl');
+var bm=document.getElementById('bloom');
+renderer=new THREE.WebGLRenderer({canvas:gl,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setClearColor(0x060610,1);
+
+bloomRenderer=new THREE.WebGLRenderer({canvas:bm,antialias:false,alpha:true});
+bloomRenderer.setPixelRatio(1);
+bloomRenderer.setSize(window.innerWidth,window.innerHeight);
+bloomRenderer.setClearColor(0x000000,0);
+
 scene=new THREE.Scene();
-scene.fog=new THREE.FogExp2(0x060610,0.035);
-camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,200);
-camera.position.set(0,8,18);
-renderer=new THREE.WebGLRenderer({canvas:document.getElementById('gl'),antialias:false,alpha:false});
-renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.2;
 bloomScene=new THREE.Scene();
-bloomScene.fog=scene.fog;
-bloomRenderer=new THREE.WebGLRenderer({canvas:document.getElementById('bloom-canvas'),antialias:false,alpha:true});
-bloomRenderer.setSize(Math.floor(innerWidth/4),Math.floor(innerHeight/4));
-bloomRenderer.toneMapping=renderer.toneMapping;
-bloomRenderer.toneMappingExposure=1.5;
-controls=new OrbitControls(camera,renderer.domElement);
+
+camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+camera.position.set(0,6,14);
+
+controls=new THREE.OrbitControls(camera,gl);
 controls.enableDamping=true;
 controls.dampingFactor=0.05;
-controls.maxDistance=50;
+controls.autoRotate=true;
+controls.autoRotateSpeed=0.4;
 controls.minDistance=3;
-controls.target.set(0,0,0);
+controls.maxDistance=40;
+
+// Lights
+scene.add(new THREE.AmbientLight(0x222244,0.5));
+var dl=new THREE.DirectionalLight(0x00f0ff,0.3);dl.position.set(5,10,5);scene.add(dl);
+var pl=new THREE.PointLight(0xff003c,0.5,20);pl.position.set(-5,3,-5);scene.add(pl);
+bloomScene.add(new THREE.AmbientLight(0xffffff,1));
+
 buildStarfield();
 buildGrid();
-loadAgents();
-animate();
+updateNeurons();
+
 window.addEventListener('resize',onResize);
-setInterval(loadAgents,30000);
-setInterval(loadBrain,15000);
-loadBrain();
-if(WS_URL){try{
-var ws=new WebSocket(WS_URL);
-ws.onmessage=function(e){addEvent('WS',e.data,'ws')};
-ws.onopen=function(){addEvent('SYS','WebSocket connected','system')};
-ws.onerror=function(){};
-}catch(e){}}
+animate();
 }
 
 function onResize(){
-camera.aspect=innerWidth/innerHeight;
+camera.aspect=window.innerWidth/window.innerHeight;
 camera.updateProjectionMatrix();
-renderer.setSize(innerWidth,innerHeight);
-bloomRenderer.setSize(Math.floor(innerWidth/4),Math.floor(innerHeight/4));
+renderer.setSize(window.innerWidth,window.innerHeight);
+bloomRenderer.setSize(window.innerWidth,window.innerHeight);
 }
 
 // ═══ STARFIELD ═══
 function buildStarfield(){
 var geo=new THREE.BufferGeometry();
-var n=2500,pos=new Float32Array(n*3),cols=new Float32Array(n*3);
+var n=2000,pos=[];
 for(var i=0;i<n;i++){
-var r=40+Math.random()*80,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
-pos[i*3]=r*Math.sin(ph)*Math.cos(th);
-pos[i*3+1]=r*Math.sin(ph)*Math.sin(th);
-pos[i*3+2]=r*Math.cos(ph);
-var b=0.3+Math.random()*0.7;
-cols[i*3]=b*0.8;cols[i*3+1]=b*0.9;cols[i*3+2]=b;
+pos.push((Math.random()-0.5)*100,(Math.random()-0.5)*100,(Math.random()-0.5)*100);
 }
-geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-var mat=new THREE.PointsMaterial({size:0.15,vertexColors:true,transparent:true,opacity:0.7,sizeAttenuation:true});
+geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+var mat=new THREE.PointsMaterial({color:0x4488aa,size:0.15,transparent:true,opacity:0.7});
 starField=new THREE.Points(geo,mat);
 scene.add(starField);
-bloomScene.add(starField.clone());
 }
 
 // ═══ HOLOGRAPHIC GRID ═══
 function buildGrid(){
-var geo=new THREE.PlaneGeometry(60,60,30,30);
-var mat=new THREE.MeshBasicMaterial({color:0xff003c,wireframe:true,transparent:true,opacity:0.04});
+var geo=new THREE.PlaneGeometry(40,40,40,40);
+var mat=new THREE.MeshBasicMaterial({color:0x00f0ff,wireframe:true,transparent:true,opacity:0.03});
 gridFloor=new THREE.Mesh(geo,mat);
 gridFloor.rotation.x=-Math.PI/2;
 gridFloor.position.y=-5;
 scene.add(gridFloor);
-var g2=gridFloor.clone();
-g2.material=mat.clone();g2.material.opacity=0.02;g2.material.color.set(0x00f0ff);
-bloomScene.add(g2);
-}
-
-// ═══ AGENT LOADING (auto-detect from API + embedded fallback) ═══
-async function loadAgents(){
-try{
-var r=await fetch(API_BASE+'/api/agents');
-var data=await r.json();
-var list=Object.values(data);
-var prevCount=agents.length;
-agents=list.map(function(a){
-return{
-name:a.name||a.desc||'unknown',
-type:a.type||'unknown',
-color:a.color||'#888',
-icon:a.icon||(a.type==='coding'?'💻':'🤖'),
-running:a.status==='active',
-installed:a.status!=='dormant',
-path:a.path||'',
-region:a.region||'semantic'
-};
-});
-agentMap={};
-agents.forEach(function(a){agentMap[a.name]=a});
-updateChips();
-updateNeurons();
-if(agents.length!==prevCount)addEvent('SYS',agents.length+' agents detected','system');
-}catch(e){
-if(EMBEDDED_DATA&&EMBEDDED_DATA.agents){
-agents=Object.values(EMBEDDED_DATA.agents);
-agentMap={};
-agents.forEach(function(a){agentMap[a.name]=a});
-updateChips();updateNeurons();
-}
-}
-}
-
-async function loadBrain(){
-try{
-var r=await fetch(API_BASE+'/api/brain');
-var data=await r.json();
-updateBrainStats(data);
-}catch(e){
-if(EMBEDDED_DATA&&EMBEDDED_DATA.brain)updateBrainStats(EMBEDDED_DATA.brain);
-}
-}
-
-// ═══ AGENT CHIPS ═══
-function updateChips(){
-var bar=document.getElementById('top-bar');
-var brand=document.getElementById('brand');
-bar.querySelectorAll('.chip').forEach(function(c){c.remove()});
-agents.forEach(function(a){
-var chip=document.createElement('div');
-chip.className='chip'+(a.running?' active-chip':'');
-chip.dataset.agent=a.name;
-var dotClass=a.running?'on':'off';
-chip.innerHTML='<span class="icon">'+(a.icon||'🤖')+'</span><span class="dot '+dotClass+'" style="background:'+a.color+';color:'+a.color+'"></span><span class="name">'+a.name+'</span><span class="type">'+a.type+'</span>';
-chip.onclick=function(){focusAgent(a.name)};
-bar.appendChild(chip);
-});
 }
 
 // ═══ 3D NEURONS ═══
@@ -323,15 +311,15 @@ var theta=Math.sqrt(count*Math.PI)*phi;
 var r=4+Math.random()*3;
 neuronPositions.push(new THREE.Vector3(r*Math.cos(theta)*Math.sin(phi),r*Math.sin(theta)*Math.sin(phi)-1,r*Math.cos(phi)));
 });
-if(neuronMesh){scene.remove(neuronMesh);bloomScene.remove(neuronMesh.clone())}
-var icoGeo=new THREE.IcosahedronGeometry(0.3,1);
+if(neuronMesh){scene.remove(neuronMesh);bloomScene.remove(bloomScene.children.find(function(c){return c.isInstancedMesh}))}
+var icoGeo=new THREE.IcosahedronGeometry(0.35,1);
 var icoMat=new THREE.MeshPhongMaterial({transparent:true,opacity:0.85,shininess:120});
 neuronMesh=new THREE.InstancedMesh(icoGeo,icoMat,count);
 var dummy=new THREE.Object3D();
 var color=new THREE.Color();
 agents.forEach(function(a,i){
 dummy.position.copy(neuronPositions[i]);
-var s=a.running?1.0:0.5;
+var s=a.running?1.2:a.installed?0.6:0.35;
 dummy.scale.set(s,s,s);
 dummy.updateMatrix();
 neuronMesh.setMatrixAt(i,dummy.matrix);
@@ -339,12 +327,14 @@ color.set(a.color||'#888888');
 neuronMesh.setColorAt(i,color);
 });
 neuronMesh.instanceMatrix.needsUpdate=true;
-neuronMesh.instanceColor.needsUpdate=true;
+if(neuronMesh.instanceColor)neuronMesh.instanceColor.needsUpdate=true;
 scene.add(neuronMesh);
+
 var bloomMesh=neuronMesh.clone();
 bloomMesh.material=icoMat.clone();
 bloomMesh.material.opacity=1.0;
 bloomScene.add(bloomMesh);
+
 updateSynapses();
 }
 
@@ -357,8 +347,8 @@ agents.forEach(function(a,i){
 agents.forEach(function(b,j){
 if(i>=j)return;
 var connected=false;
-if(a.type==='reasoning'||b.type==='reasoning')connected=true;
-if(a.type==='routing'||b.type==='routing')connected=true;
+if(a.type==='orchestrator'||b.type==='orchestrator')connected=true;
+if(a.type==='router'||b.type==='router')connected=true;
 if(a.running&&b.running)connected=true;
 if(connected&&neuronPositions[i]&&neuronPositions[j]){
 positions.push(neuronPositions[i].x,neuronPositions[i].y,neuronPositions[i].z);
@@ -375,7 +365,7 @@ if(positions.length===0)return;
 var geo=new THREE.BufferGeometry();
 geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
 geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-var mat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.25});
+var mat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.2});
 synapseLines=new THREE.LineSegments(geo,mat);
 scene.add(synapseLines);
 }
@@ -385,212 +375,30 @@ function focusAgent(name){
 var idx=agents.findIndex(function(a){return a.name===name});
 if(idx<0||!neuronPositions[idx])return;
 var pos=neuronPositions[idx];
-targetCamPos=new THREE.Vector3(pos.x+4,pos.y+3,pos.z+4);
+targetCamPos=new THREE.Vector3(pos.x+3,pos.y+2,pos.z+3);
 camLerp=0;
 var label=document.getElementById('focus-label');
-label.textContent=name.toUpperCase()+' — '+agents[idx].type;
+label.textContent=name.toUpperCase()+' — '+agents[idx].type.toUpperCase();
 label.classList.add('show');
-setTimeout(function(){label.classList.remove('show')},2000);
+setTimeout(function(){label.classList.remove('show')},2500);
 }
 
-// ═══ BRAIN STATS UI ═══
-function updateBrainStats(data){
-var el=document.getElementById('brain-stats');
-if(!data||typeof data!=='object'){el.innerHTML='<div style="color:#444">No data</div>';return}
-var html='';
-if(data.faiss)html+='<div class="stat-row"><span class="k">Semantic</span><span class="v">'+(data.faiss.count||0)+' vectors</span></div>';
-if(data.graph)html+='<div class="stat-row"><span class="k">Graph</span><span class="v">'+(data.graph.nodes||0)+' nodes / '+(data.graph.edges||0)+' edges</span></div>';
-if(data.episodic)html+='<div class="stat-row"><span class="k">Episodic</span><span class="v">'+(data.episodic.total||0)+' episodes</span></div>';
-if(data.redis)html+='<div class="stat-row"><span class="k">Working</span><span class="v">'+(data.redis.keys||0)+' keys</span></div>';
-if(data.skills)html+='<div class="stat-row"><span class="k">Procedural</span><span class="v">'+(data.skills.count||0)+' skills</span></div>';
-el.innerHTML=html||'<div style="color:#444">Empty</div>';
+// ═══ RAYCASTER — CLICK ON 3D NEURONS ═══
+var raycaster=new THREE.Raycaster();
+var mouse=new THREE.Vector2();
+document.getElementById('gl').addEventListener('click',function(e){
+if(currentTab!=='3d')return;
+var rect=renderer.domElement.getBoundingClientRect();
+mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+raycaster.setFromCamera(mouse,camera);
+if(!neuronMesh)return;
+var hits=raycaster.intersectObject(neuronMesh);
+if(hits.length>0){
+var idx=hits[0].instanceId;
+if(idx>=0&&idx<agents.length)focusAgent(agents[idx].name);
 }
-
-function addEvent(src,msg,type){
-eventLog.unshift({t:new Date().toLocaleTimeString(),s:src,m:msg.substring(0,80),tp:type});
-if(eventLog.length>50)eventLog.pop();
-var el=document.getElementById('events');
-el.innerHTML=eventLog.map(function(e){return'<div class="evt"><span class="t">'+e.t+'</span> <span class="m">['+e.s+'] '+e.m+'</span></div>'}).join('');
-}
-
-// ═══ AGENT GRID PANEL ═══
-function renderAgentGrid(){
-var grid=document.getElementById('agent-grid');
-var sorted=agents.slice().sort(function(a,b){
-var pa=a.running?0:a.installed?1:2;
-var pb=b.running?0:b.installed?1:2;
-return pa-pb;
 });
-grid.innerHTML=sorted.map(function(a){
-var statusCls=a.running?'active':a.installed?'installed':'dormant';
-var cardCls=a.running?'running':a.installed?'installed':'dormant';
-var statusText=a.running?'ACTIVE':a.installed?'INSTALLED':'DORMANT';
-var regionName=a.region||'unknown';
-var region=BRAIN_REGIONS[regionName];
-var regionLabel=region?region.name:regionName;
-return'<div class="agent-card '+cardCls+'" style="--acolor:'+a.color+'">'+
-'<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,'+a.color+',transparent);opacity:0.6"></div>'+
-'<div class="agent-header">'+
-'<span class="agent-icon">'+(a.icon||'🤖')+'</span>'+
-'<div><div class="agent-name" style="color:'+a.color+'">'+a.name.toUpperCase()+'</div>'+
-'<div class="agent-type">'+a.type+'</div></div>'+
-'<span class="agent-status '+statusCls+'" style="margin-left:auto">'+statusText+'</span>'+
-'</div>'+
-'<div class="agent-region">⟁ '+regionLabel+'</div>'+
-(a.path?'<div class="agent-path">'+a.path+'</div>':'')+
-'</div>';
-}).join('');
-}
-
-// ═══ BACKTEST PANEL ═══
-function renderBacktest(){
-var el=document.getElementById('backtest-content');
-var runs=EMBEDDED_DATA.backtest||[];
-if(!runs.length){el.innerHTML='<div style="text-align:center;color:#444;padding:40px">No backtest data</div>';return}
-
-var verBtns=runs.map(function(r,i){
-return'<div class="ver-btn'+(i===selectedVersion?' on':'')+'" data-idx="'+i+'">V'+r.version+'</div>';
-}).join('');
-
-var run=runs[selectedVersion]||runs[0];
-var pnl=run.total_pnl||0;
-var roi=run.return_pct||0;
-
-var statsHtml=[
-{label:'Starting Bankroll',value:'$'+(run.starting_bankroll||0).toFixed(2),cls:'ice'},
-{label:'Final Bankroll',value:'$'+(run.final_bankroll||0).toFixed(2),cls:'ice'},
-{label:'Total P&L',value:(pnl>=0?'+':'')+('$'+pnl.toFixed(2)),cls:pnl>=0?'pos':'neg'},
-{label:'ROI',value:roi.toFixed(1)+'%',cls:roi>=0?'pos':'neg'},
-{label:'Win Rate',value:(run.win_rate||0).toFixed(1)+'%',cls:'ice'},
-{label:'Max Drawdown',value:(run.max_drawdown||0).toFixed(1)+'%',cls:'neg'},
-{label:'Qualifying',value:(run.qualifying_markets||0)+'/'+(run.total_markets||0),cls:'ice'},
-{label:'W/L',value:(run.winning_trades||0)+'W / '+(run.losing_trades||0)+'L',cls:'ice'},
-].map(function(s){
-return'<div class="bt-stat"><div class="label">'+s.label+'</div><div class="value '+s.cls+'">'+s.value+'</div></div>';
-}).join('');
-
-// Equity curve
-var curve=run.equity_curve||[run.starting_bankroll,run.final_bankroll];
-var canvasId='bt-equity';
-
-el.innerHTML=
-'<div style="margin-bottom:8px;font-family:var(--font);font-size:10px;color:#555;letter-spacing:2px">BACKTEST VERSIONS</div>'+
-'<div class="version-nav">'+verBtns+'</div>'+
-'<div class="bt-stats">'+statsHtml+'</div>'+
-'<div style="margin:12px 0 6px;font-family:var(--font);font-size:9px;color:#555;letter-spacing:1px">EQUITY CURVE — V'+run.version+'</div>'+
-'<canvas id="'+canvasId+'" style="width:100%;height:200px;background:#060610;border-radius:6px;border:1px solid var(--border)"></div>'+
-(run.notes?'<div style="margin-top:8px;font-size:9px;color:#555;font-family:var(--font)">'+run.notes+'</div>':'');
-
-// Wire version buttons
-el.querySelectorAll('.ver-btn').forEach(function(btn){
-btn.onclick=function(){
-selectedVersion=parseInt(btn.dataset.idx);
-renderBacktest();
-};
-});
-
-// Draw equity curve
-setTimeout(function(){drawEquityCurve(canvasId,curve)},50);
-}
-
-function drawEquityCurve(canvasId,values){
-var canvas=document.getElementById(canvasId);
-if(!canvas||!values.length)return;
-var rect=canvas.getBoundingClientRect();
-canvas.width=rect.width*2;
-canvas.height=rect.height*2;
-var ctx=canvas.getContext('2d');
-ctx.scale(2,2);
-var w=rect.width,h=rect.height;
-var pad={top:16,right:16,bottom:24,left:50};
-var plotW=w-pad.left-pad.right;
-var plotH=h-pad.top-pad.bottom;
-var minV=Math.min.apply(null,values);
-var maxV=Math.max.apply(null,values);
-var rangeV=maxV-minV||1;
-
-ctx.fillStyle='#060610';
-ctx.fillRect(0,0,w,h);
-
-// Grid
-ctx.strokeStyle='#1a1a2e';
-ctx.lineWidth=0.5;
-for(var i=0;i<=4;i++){
-var y=pad.top+(plotH*i/4);
-ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+plotW,y);ctx.stroke();
-ctx.fillStyle='#333';
-ctx.font='8px monospace';
-ctx.textAlign='right';
-ctx.fillText('$'+(maxV-(rangeV*i/4)).toFixed(0),pad.left-6,y+3);
-}
-
-// Equity line
-ctx.beginPath();
-ctx.strokeStyle='#00f0ff';
-ctx.lineWidth=2;
-ctx.shadowColor='#00f0ff';
-ctx.shadowBlur=10;
-values.forEach(function(v,i){
-var x=pad.left+(i/(values.length-1||1))*plotW;
-var y=pad.top+plotH-((v-minV)/rangeV)*plotH;
-if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-});
-ctx.stroke();
-
-// Fill area
-ctx.shadowBlur=0;
-ctx.lineTo(pad.left+plotW,pad.top+plotH);
-ctx.lineTo(pad.left,pad.top+plotH);
-ctx.closePath();
-var grad=ctx.createLinearGradient(0,pad.top,0,pad.top+plotH);
-grad.addColorStop(0,'rgba(0,240,255,0.12)');
-grad.addColorStop(1,'rgba(0,240,255,0.01)');
-ctx.fillStyle=grad;
-ctx.fill();
-
-// Data points
-values.forEach(function(v,i){
-var x=pad.left+(i/(values.length-1||1))*plotW;
-var y=pad.top+plotH-((v-minV)/rangeV)*plotH;
-ctx.beginPath();
-ctx.arc(x,y,3,0,Math.PI*2);
-ctx.fillStyle='#00f0ff';
-ctx.shadowColor='#00f0ff';
-ctx.shadowBlur=6;
-ctx.fill();
-ctx.shadowBlur=0;
-});
-}
-
-// ═══ BRAIN REGIONS PANEL ═══
-function renderBrainRegions(){
-var grid=document.getElementById('region-grid');
-var regions=Object.entries(BRAIN_REGIONS);
-grid.innerHTML=regions.map(function(entry){
-var key=entry[0],r=entry[1];
-return'<div class="region-card">'+
-'<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,'+r.color+',transparent)"></div>'+
-'<div class="region-name" style="color:'+r.color+'">'+r.name+'</div>'+
-'<div class="region-backend">'+r.backend+'</div>'+
-'<div class="region-desc">'+r.desc+'</div>'+
-'<div class="region-functions">'+r.fns.map(function(f){return'<div class="region-fn">'+f+'</div>'}).join('')+'</div>'+
-'</div>';
-}).join('');
-}
-
-// ═══ BOTTOM BAR ═══
-function updateBottom(){
-var bar=document.getElementById('bottom-bar');
-var active=agents.filter(function(a){return a.running}).length;
-var installed=agents.filter(function(a){return a.installed}).length;
-var ts=new Date().toLocaleTimeString();
-bar.innerHTML='<div class="bstat"><span class="lbl">AGENTS</span><span class="val">'+agents.length+'</span></div>'+
-'<div class="bstat"><span class="lbl">ACTIVE</span><span class="val" style="color:var(--green)">'+active+'</span></div>'+
-'<div class="bstat"><span class="lbl">INSTALLED</span><span class="val" style="color:var(--yellow)">'+installed+'</span></div>'+
-'<div class="bstat"><span class="lbl">MEM</span><span class="val">'+(performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576)+'MB':'—')+'</span></div>'+
-'<div class="bstat"><span class="lbl">TIME</span><span class="val">'+ts+'</span></div>'+
-'<div class="bstat"><span class="lbl">DRAW</span><span class="val">'+renderer.info.render.calls+'</span></div>';
-}
 
 // ═══ ANIMATE ═══
 function animate(){
@@ -609,10 +417,10 @@ var dummy=new THREE.Object3D();
 agents.forEach(function(a,i){
 if(!neuronPositions[i])return;
 dummy.position.copy(neuronPositions[i]);
-var base=a.running?1.0:0.5;
+var base=a.running?1.2:a.installed?0.6:0.35;
 var s=base;
-if(a.running){s=base+Math.sin(pulseTime*3+i)*0.1;}
-dummy.position.y+=Math.sin(pulseTime*0.5+i*0.7)*0.08;
+if(a.running){s=base+Math.sin(pulseTime*3+i)*0.12;}
+dummy.position.y+=Math.sin(pulseTime*0.5+i*0.7)*0.1;
 dummy.scale.set(s,s,s);
 dummy.rotation.y=pulseTime*0.3+i;
 dummy.updateMatrix();
@@ -622,7 +430,7 @@ neuronMesh.instanceMatrix.needsUpdate=true;
 }
 
 if(synapseLines){synapseLines.material.opacity=0.15+Math.sin(pulseTime*2)*0.1;}
-if(starField)starField.rotation.y+=dt*0.003;
+if(starField)starField.rotation.y+=dt*0.002;
 if(gridFloor)gridFloor.material.opacity=0.03+Math.sin(pulseTime)*0.01;
 
 controls.update();
@@ -632,7 +440,398 @@ bloomRenderer.render(bloomScene,camera);
 if(Math.floor(pulseTime*60)%30===0)updateBottom();
 }
 
-init();
+// ═══ DATA LOADING ═══
+async function loadAgents(){
+try{
+var r=await fetch(API_BASE+'/api/agents');
+var data=await r.json();
+var prevCount=agents.length;
+agents=data.map(function(a){
+return{name:a.name||'unknown',type:a.type||'coder',color:a.color||'#888',icon:a.icon||'🤖',running:a.running||false,installed:a.installed||false,path:a.path||''};
+});
+agentMap={};agents.forEach(function(a){agentMap[a.name]=a});
+updateChips();updateNeurons();
+if(agents.length!==prevCount)addEvent('SYS',agents.length+' agents detected','system');
+}catch(e){
+if(agents.length===0){
+if(EMBEDDED&&EMBEDDED.agents){agents=Object.values(EMBEDDED.agents).map(function(a){return{name:a.name,type:a.type||'coder',color:a.color||'#888',icon:a.icon||'🤖',running:a.running||a.status==='active',installed:a.installed||a.status!=='dormant',path:a.path||''};});}
+else{agents=DEMO_AGENTS.slice();}
+agentMap={};agents.forEach(function(a){agentMap[a.name]=a});updateChips();updateNeurons();
+}
+}
+}
+
+async function loadBrain(){
+try{
+var r=await fetch(API_BASE+'/api/brain');
+brainData=await r.json();
+}catch(e){if(Object.keys(brainData).length===0)brainData=(EMBEDDED&&EMBEDDED.brain)?EMBEDDED.brain:DEMO_BRAIN;}
+updateBrainStats(brainData);
+}
+
+async function loadMetrics(){
+try{
+var r=await fetch(API_BASE+'/api/metrics');
+metricsData=await r.json();
+}catch(e){if(Object.keys(metricsData).length===0)metricsData=(EMBEDDED&&EMBEDDED.metrics)?EMBEDDED.metrics:DEMO_METRICS;}
+}
+
+async function loadTree(){
+try{
+var r=await fetch(API_BASE+'/api/tree');
+sessionTree=(await r.json()).roots||[];
+}catch(e){if(sessionTree.length===0)sessionTree=(EMBEDDED&&EMBEDDED.tree)?EMBEDDED.tree:DEMO_TREE.roots;}
+if(currentTab==='sessions')renderSessionTree();
+}
+
+async function loadStats(){
+try{
+var r=await fetch(API_BASE+'/api/stats');
+agentStatsData=await r.json();
+}catch(e){agentStatsData=(EMBEDDED&&EMBEDDED.stats)?EMBEDDED.stats:{};}
+}
+
+async function loadActive(){
+try{
+var r=await fetch(API_BASE+'/api/sessions/active');
+activeSessions=await r.json();
+}catch(e){activeSessions=[];}
+}
+
+async function loadSessionDetail(sid){
+try{
+var r=await fetch(API_BASE+'/api/session/'+sid);
+return await r.json();
+}catch(e){return null;}
+}
+
+function loadAll(){
+loadAgents();loadBrain();loadMetrics();loadTree();loadStats();loadActive();
+}
+
+// ═══ WEBSOCKET ═══
+var ws=null,wsReconnect=0;
+function connectWS(){
+try{
+ws=new WebSocket(WS_URL);
+ws.onopen=function(){wsReconnect=0;addEvent('SYS','WebSocket connected','system');};
+ws.onmessage=function(e){
+try{
+var d=JSON.parse(e.data);
+if(d.agents){agents=d.agents;agentMap={};agents.forEach(function(a){agentMap[a.name]=a});updateChips();updateNeurons();}
+if(d.brain){brainData=d.brain;updateBrainStats(brainData);}
+if(d.metrics)metricsData=d.metrics;
+if(d.activeSessions)activeSessions=d.activeSessions;
+if(d.sessionTree)sessionTree=d.sessionTree;
+if(d.agentStats)agentStatsData=d.agentStats;
+if(d.events&&d.events.length)d.events.forEach(function(ev){addEvent(ev.role||'WS',ev.content||ev.toolName||'event','ws')});
+if(currentTab==='sessions')renderSessionTree();
+if(currentTab==='agents')renderAgentGrid();
+if(currentTab==='brain')renderBrainRegions();
+if(currentTab==='system')renderSystem();
+}catch(ex){}
+};
+ws.onerror=function(){};
+ws.onclose=function(){
+wsReconnect++;
+var delay=Math.min(1000*Math.pow(2,wsReconnect),30000);
+setTimeout(connectWS,delay);
+};
+}catch(e){setTimeout(connectWS,5000);}
+}
+
+// ═══ AGENT CHIPS ═══
+function updateChips(){
+var bar=document.getElementById('top-bar');
+bar.querySelectorAll('.chip').forEach(function(c){c.remove()});
+agents.forEach(function(a){
+var chip=document.createElement('div');
+chip.className='chip'+(a.running?' active-chip':'');
+chip.dataset.agent=a.name;
+var dotClass=a.running?'on':'off';
+chip.innerHTML='<span class="icon">'+(a.icon||'🤖')+'</span><span class="dot '+dotClass+'" style="background:'+a.color+';color:'+a.color+'"></span><span class="name">'+a.name+'</span>';
+chip.onclick=function(){
+focusAgent(a.name);
+if(currentTab!=='3d'){document.querySelector('[data-tab="3d"]').click();}
+};
+bar.appendChild(chip);
+});
+}
+
+// ═══ BRAIN STATS UI ═══
+function updateBrainStats(data){
+var el=document.getElementById('brain-stats');
+if(!data||typeof data!=='object'){el.innerHTML='<div style="color:#444">No data</div>';return}
+var html='';
+var b=data.semanticCortex||data.faiss||{};
+html+='<div class="stat-row"><span class="k">Semantic</span><span class="v">'+(b.vectorCount||b.count||0)+' vectors</span></div>';
+var g=data.knowledgeGraph||data.graph||{};
+html+='<div class="stat-row"><span class="k">Graph</span><span class="v">'+(g.nodes||0)+' nodes / '+(g.edges||0)+' edges</span></div>';
+var e=data.episodicMemory||data.episodic||{};
+html+='<div class="stat-row"><span class="k">Episodic</span><span class="v">'+(e.episodes||e.total||0)+' episodes</span></div>';
+var w=data.workingMemory||data.redis||{};
+html+='<div class="stat-row"><span class="k">Working</span><span class="v">'+(w.keys||0)+' keys</span></div>';
+var d=data.driveSync||data.drive||{};
+html+='<div class="stat-row"><span class="k">Drive</span><span class="v">'+(d.files||0)+' files</span></div>';
+el.innerHTML=html||'<div style="color:#444">Empty</div>';
+}
+
+// ═══ EVENTS LOG ═══
+function addEvent(src,msg,type){
+eventLog.unshift({t:new Date().toLocaleTimeString(),s:src,m:(msg||'').substring(0,80),tp:type});
+if(eventLog.length>50)eventLog.pop();
+var el=document.getElementById('events');
+el.innerHTML=eventLog.map(function(e){return'<div class="evt"><span class="t">'+e.t+'</span> <span class="m">[<b>'+e.s+'</b>] '+e.m+'</span></div>';}).join('');
+}
+
+// ═══ AGENT GRID PANEL ═══
+function renderAgentGrid(){
+var grid=document.getElementById('agent-grid');
+var sorted=agents.slice().sort(function(a,b){
+var pa=a.running?0:a.installed?1:2;
+var pb=b.running?0:b.installed?1:2;
+return pa-pb;
+});
+grid.innerHTML=sorted.map(function(a){
+var statusCls=a.running?'active':a.installed?'installed':'dormant';
+var cardCls=a.running?'running':a.installed?'installed':'dormant';
+var statusText=a.running?'ACTIVE':a.installed?'INSTALLED':'DORMANT';
+var regionKey=a.type==='orchestrator'?'working':a.type==='router'?'graph':a.type==='coder'?'semantic':'sensory';
+var region=BRAIN_REGIONS[regionKey]||BRAIN_REGIONS.semantic;
+var regionLabel=region.name;
+// Get process info from metrics
+var procs=metricsData&&metricsData.agentProcesses?metricsData.agentProcesses[a.name]||[]:[];
+var procHtml=procs.length?procs.map(function(p){return'<div class="proc">PID '+p.pid+' · CPU '+p.cpu+'% · MEM '+p.mem+'%</div>';}).join(''):'';
+// Get session stats
+var akey=Object.keys(agentStatsData).find(function(k){return k.toLowerCase().indexOf(a.name)>=0});
+var sData=akey?agentStatsData[akey]:null;
+var sessHtml=sData?'<div class="stat-row"><span class="k">Sessions</span><span class="v">'+sData.totalSessions+'</span></div><div class="stat-row"><span class="k">Messages</span><span class="v">'+sData.totalMessages+'</span></div><div class="stat-row"><span class="k">Tool Calls</span><span class="v">'+sData.totalToolCalls+'</span></div><div class="stat-row"><span class="k">Cost</span><span class="v">$'+sData.totalCostUsd.toFixed(4)+'</span></div>':'';
+
+return'<div class="agent-card '+cardCls+'" data-agent="'+a.name+'" style="--acolor:'+a.color+'">'+
+'<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,'+a.color+',transparent);opacity:0.6"></div>'+
+'<div class="agent-header">'+
+'<span class="agent-icon">'+a.icon+'</span>'+
+'<div><div class="agent-name" style="color:'+a.color+'">'+a.name.toUpperCase()+'</div>'+
+'<div class="agent-type">'+a.type+'</div></div>'+
+'<span class="agent-status '+statusCls+'" style="margin-left:auto">'+statusText+'</span>'+
+'</div>'+
+'<div class="agent-region">⟁ '+regionLabel+'</div>'+
+(a.path?'<div class="agent-path">'+a.path+'</div>':'')+
+'<div class="agent-detail">'+procHtml+sessHtml+'</div>'+
+'</div>';
+}).join('');
+
+// Wire clicks — toggle expand
+grid.querySelectorAll('.agent-card').forEach(function(card){
+card.onclick=function(){
+card.classList.toggle('expanded');
+};
+});
+}
+
+// ═══ SESSION TREE PANEL ═══
+function renderSessionTree(){
+var treeEl=document.getElementById('session-tree');
+if(!sessionTree||!sessionTree.length){treeEl.innerHTML='<div style="color:#333;padding:20px;text-align:center">No sessions</div>';return}
+treeEl.innerHTML=renderTreeNodes(sessionTree,0);
+// Wire clicks
+treeEl.querySelectorAll('.tree-node').forEach(function(node){
+node.onclick=function(e){
+e.stopPropagation();
+var sid=node.dataset.sid;
+selectedSessionId=sid;
+treeEl.querySelectorAll('.tree-node').forEach(function(n){n.classList.remove('active-node')});
+node.classList.add('active-node');
+showSessionInfo(sid);
+};
+});
+treeEl.querySelectorAll('.tree-toggle').forEach(function(tog){
+tog.onclick=function(e){
+e.stopPropagation();
+var ch=tog.parentElement.nextElementSibling;
+if(ch&&ch.classList.contains('tree-children')){
+ch.style.display=ch.style.display==='none'?'block':'none';
+tog.textContent=ch.style.display==='none'?'►':'▼';
+}
+};
+});
+}
+
+function renderTreeNodes(nodes,depth){
+return nodes.map(function(n){
+var hasChildren=n.children&&n.children.length>0;
+var toggle=hasChildren?'<span class="tree-toggle">▼</span>':'<span style="width:14px;display:inline-block"></span>';
+var modelTag='<span class="model-tag">'+shortModel(n.model)+'</span>';
+var countTag='<span class="count-tag">'+n.messageCount+'msg</span>';
+var isActive=!n.endedAt;
+var dot=isActive?'<span style="color:var(--green)">●</span>':'<span style="color:#333">●</span>';
+var html='<div class="tree-node" data-sid="'+n.id+'" style="padding-left:'+(depth*20+4)+'px">'+dot+toggle+' '+(n.title||n.id.substring(0,16))+modelTag+countTag+'</div>';
+if(hasChildren)html+='<div class="tree-children">'+renderTreeNodes(n.children,depth+1)+'</div>';
+return html;
+}).join('');
+}
+
+function shortModel(m){if(!m)return'?';var p=m.split('/');return p.length>1?p[p.length-1].substring(0,14):m.substring(0,14);}
+
+async function showSessionInfo(sid){
+var info=document.getElementById('session-info');
+info.innerHTML='<div style="color:var(--cyan);padding:20px">Loading...</div>';
+var detail=await loadSessionDetail(sid);
+if(!detail){
+// Fallback: find in tree
+var found=findInTree(sessionTree,sid);
+if(found)detail=found;
+}
+if(!detail){info.innerHTML='<div class="empty">Session not found</div>';return;}
+
+var html='<div style="border-bottom:1px solid var(--border);padding:10px">';
+html+='<div style="font-size:13px;color:var(--cyan);font-weight:700">'+(detail.title||detail.id)+'</div>';
+html+='<div style="font-size:9px;color:#555;margin-top:4px">'+detail.model+' · '+(detail.platform||detail.source||'')+'</div>';
+html+='</div>';
+
+html+='<div style="padding:10px">';
+var fields=[
+['Messages',detail.messageCount],['Tool Calls',detail.toolCallCount],
+['Input Tokens',formatNum(detail.inputTokens)],['Output Tokens',formatNum(detail.outputTokens)],
+['Total Tokens',formatNum(detail.totalTokens)],['Cost','$'+(detail.costUsd||0).toFixed(4)],
+['Started',detail.startedAt?new Date(detail.startedAt*1000).toLocaleString():'—'],
+['Platform',detail.platform||detail.source||'—']
+];
+fields.forEach(function(f){
+html+='<div class="field" style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.02)"><span style="color:#666;font-size:10px">'+f[0]+'</span><span style="color:var(--cyan);font-size:10px">'+f[1]+'</span></div>';
+});
+
+// Subagents
+if(detail.subagents&&detail.subagents.length){
+html+='<div style="margin-top:12px;font-size:9px;color:var(--purple);letter-spacing:1px">SUBAGENTS ('+detail.subagents.length+')</div>';
+detail.subagents.forEach(function(s){
+html+='<div class="sub-item" style="padding:4px 8px;margin:3px 0;background:rgba(168,85,247,.06);border-radius:4px;font-size:9px;border-left:2px solid var(--purple)">'+
+'<div style="color:var(--purple);font-weight:700">'+(s.title||s.id.substring(0,16))+'</div>'+
+'<div style="color:#555">'+s.model+' · '+formatNum(s.tokens)+' tokens · '+s.toolCalls+' tools</div>'+
+'</div>';
+});
+}
+
+// Messages
+if(detail.messages&&detail.messages.length){
+html+='<div style="margin-top:12px;font-size:9px;color:var(--cyan);letter-spacing:1px;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">MESSAGES ('+detail.messages.length+') ▼</div>';
+html+='<div class="msg-list" style="max-height:250px;overflow-y:auto;display:none">';
+detail.messages.forEach(function(m){
+var rc=m.role==='user'?'var(--yellow)':m.role==='assistant'?'var(--cyan)':m.role==='tool'?'var(--green)':'#666';
+html+='<div class="msg-item" style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,.02)"><span style="font-weight:700;color:'+rc+'">'+m.role+'</span> <span style="color:#777">'+(m.content||'').substring(0,120)+'</span></div>';
+});
+html+='</div>';
+}
+
+html+='</div>';
+info.innerHTML=html;
+}
+
+function findInTree(nodes,sid){
+for(var i=0;i<nodes.length;i++){
+if(nodes[i].id===sid)return nodes[i];
+if(nodes[i].children){var f=findInTree(nodes[i].children,sid);if(f)return f;}
+}
+return null;
+}
+
+function formatNum(n){if(!n)return '0';if(n>=1000000)return (n/1000000).toFixed(1)+'M';if(n>=1000)return (n/1000).toFixed(1)+'K';return String(n);}
+
+// ═══ BRAIN REGIONS PANEL ═══
+function renderBrainRegions(){
+var grid=document.getElementById('region-grid');
+var regions=[
+{key:'semanticCortex',name:'Semantic Cortex',color:'#00f0ff',backend:'FAISS',icon:'🔮',data:brainData.semanticCortex||{}},
+{key:'knowledgeGraph',name:'Knowledge Graph',color:'#a855f7',backend:'NetworkX',icon:'🕸',data:brainData.knowledgeGraph||{}},
+{key:'episodicMemory',name:'Memory Hippocampus',color:'#00ff88',backend:'SQLite',icon:'🧠',data:brainData.episodicMemory||{}},
+{key:'workingMemory',name:'Working Memory',color:'#fbbf24',backend:'Redis',icon:'⚡',data:brainData.workingMemory||{}},
+{key:'driveSync',name:'Drive Sync',color:'#34d399',backend:'rclone',icon:'☁',data:brainData.driveSync||{}}
+];
+grid.innerHTML=regions.map(function(r){
+var statusDot=r.data.status==='active'||r.data.status==='connected'?'🟢':'🔴';
+var metrics=[];
+if(r.data.vectorCount!=null)metrics.push({l:'Vectors',v:r.data.vectorCount,max:1000,color:r.color});
+if(r.data.nodes!=null)metrics.push({l:'Nodes',v:r.data.nodes,max:500,color:r.color});
+if(r.data.edges!=null)metrics.push({l:'Edges',v:r.data.edges,max:1000,color:r.color});
+if(r.data.episodes!=null)metrics.push({l:'Episodes',v:r.data.episodes,max:200,color:r.color});
+if(r.data.keys!=null)metrics.push({l:'Keys',v:r.data.keys,max:100,color:r.color});
+if(r.data.files!=null)metrics.push({l:'Files',v:r.data.files,max:500,color:r.color});
+var metricsHtml=metrics.map(function(m){
+var pct=Math.min((m.v/m.max)*100,100);
+return'<div class="metric"><span class="ml">'+m.l+'</span><span class="mv">'+m.v+'</span></div><div class="gauge-bar"><div class="gauge-fill" style="width:'+pct+'%;background:'+m.color+';color:'+m.color+'"></div></div>';
+}).join('');
+return'<div class="region-card">'+
+'<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,'+r.color+',transparent)"></div>'+
+'<div style="font-size:20px;position:absolute;top:10px;right:12px;opacity:.2">'+r.icon+'</div>'+
+'<div class="region-name" style="color:'+r.color+'">'+statusDot+' '+r.name+'</div>'+
+'<div class="region-backend">'+r.backend+'</div>'+
+'<div class="region-metrics" style="margin-top:10px">'+metricsHtml+'</div>'+
+(r.data.totalSize?'<div style="margin-top:6px;font-size:9px;color:#555">Total: '+r.data.totalSize+'</div>':'')+
+'</div>';
+}).join('');
+}
+
+// ═══ SYSTEM PANEL ═══
+function renderSystem(){
+var el=document.getElementById('system-content');
+var m=metricsData;
+if(!m||!m.cpu){el.innerHTML='<div style="color:#333;text-align:center;padding:40px">No metrics data</div>';return}
+
+var cpuPct=m.cpu||0;
+var memPct=m.memPercent||0;
+var diskPct=m.diskPercent||0;
+var memUsedGB=((m.memUsed||0)/1073741824).toFixed(1);
+var memTotalGB=((m.memTotal||0)/1073741824).toFixed(1);
+var diskUsedGB=((m.diskUsed||0)/1073741824).toFixed(1);
+var diskTotalGB=((m.diskTotal||0)/1073741824).toFixed(1);
+
+var html='<div style="margin-bottom:8px;font-size:9px;color:#555;letter-spacing:2px">SYSTEM METRICS</div>';
+
+html+='<div class="sys-bar"><div class="sys-label"><span>CPU</span><span style="color:var(--cyan)">'+cpuPct+'%</span></div><div class="sys-track"><div class="sys-fill" style="width:'+cpuPct+'%;background:linear-gradient(90deg,#00ff88,#00f0ff)"></div></div></div>';
+html+='<div class="sys-bar"><div class="sys-label"><span>RAM</span><span style="color:var(--cyan)">'+memUsedGB+' / '+memTotalGB+' GB ('+memPct+'%)</span></div><div class="sys-track"><div class="sys-fill" style="width:'+memPct+'%;background:linear-gradient(90deg,#fbbf24,#ff003c)"></div></div></div>';
+html+='<div class="sys-bar"><div class="sys-label"><span>DISK</span><span style="color:var(--cyan)">'+diskUsedGB+' / '+diskTotalGB+' GB ('+diskPct+'%)</span></div><div class="sys-track"><div class="sys-fill" style="width:'+diskPct+'%;background:linear-gradient(90deg,#ff003c,#a855f7)"></div></div></div>';
+
+html+='<div style="margin-top:12px;font-size:9px;color:#555;letter-spacing:2px">NETWORK I/O</div>';
+html+='<div style="display:flex;gap:20px;margin:8px 0;font-size:10px"><div><span style="color:#666">TX:</span> <span style="color:var(--cyan)">'+formatBytes(m.netBytesSent||0)+'</span></div><div><span style="color:#666">RX:</span> <span style="color:var(--cyan)">'+formatBytes(m.netBytesRecv||0)+'</span></div></div>';
+
+// Agent processes
+if(m.agentProcesses&&Object.keys(m.agentProcesses).length){
+html+='<div style="margin-top:12px;font-size:9px;color:#555;letter-spacing:2px">AGENT PROCESSES</div>';
+Object.entries(m.agentProcesses).forEach(function(entry){
+var name=entry[0],procs=entry[1];
+procs.forEach(function(p){
+html+='<div style="padding:4px 8px;margin:3px 0;background:var(--panel);border-radius:4px;font-size:9px;border-left:2px solid var(--cyan)"><b style="color:var(--cyan)">'+name+'</b> PID:'+p.pid+' CPU:'+p.cpu+'% MEM:'+p.mem+'%<div style="color:#333;font-size:8px;margin-top:2px">'+(p.cmd||'')+'</div></div>';
+});
+});
+}
+
+el.innerHTML=html;
+}
+
+function formatBytes(b){if(!b)return '0B';var u=['B','KB','MB','GB'];var i=0;while(b>=1024&&i<u.length-1){b/=1024;i++;}return b.toFixed(1)+u[i];}
+
+// ═══ BOTTOM BAR ═══
+function updateBottom(){
+var bar=document.getElementById('bottom-bar');
+var active=agents.filter(function(a){return a.running}).length;
+var installed=agents.filter(function(a){return a.installed}).length;
+var ts=new Date().toLocaleTimeString();
+var drawCalls=renderer?renderer.info.render.calls:0;
+bar.innerHTML='<div class="bstat"><span class="lbl">AGENTS</span><span class="val">'+agents.length+'</span></div>'+
+'<div class="bstat"><span class="lbl">ACTIVE</span><span class="val" style="color:var(--green)">'+active+'</span></div>'+
+'<div class="bstat"><span class="lbl">INSTALLED</span><span class="val" style="color:var(--yellow)">'+installed+'</span></div>'+
+'<div class="bstat"><span class="lbl">SESSIONS</span><span class="val">'+activeSessions.length+'</span></div>'+
+'<div class="bstat"><span class="lbl">MEM</span><span class="val">'+(performance&&performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576)+'MB':'—')+'</span></div>'+
+'<div class="bstat"><span class="lbl">TIME</span><span class="val">'+ts+'</span></div>'+
+'<div class="bstat"><span class="lbl">DRAW</span><span class="val">'+drawCalls+'</span></div>';
+}
+
+// ═══ BOOT ═══
+init3D();
+loadAll();
+connectWS();
+setInterval(function(){if(!ws||ws.readyState!==1)loadAll();},POLL_MS);
+addEvent('SYS','AkpanBrain Neural Interface online','system');
 </script>
 </body>
 </html>
